@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+env/
+.venv/
+venv/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local database and runtime files
+*.db
+*.sqlite
+*.sqlite3
+
+# User-uploaded files and generated storage
+uploads/*
+!uploads/0bf6b8800a2445bfaf9a69e941e92299_mixkit-interface-option-select-2573.wav
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

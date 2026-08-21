@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
+    <style>
+        .drop-zone { border: 2px dashed #9aa4b2; cursor: pointer; transition: border-color .15s, background-color .15s; }
+        .drop-zone.is-dragging { border-color: #0d6efd; background-color: #e7f1ff !important; }
+        .folder-drop-target.is-file-over { outline: 3px dashed #0d6efd; background-color: #e7f1ff !important; }
+        .file-type-icon { font-size: 2.5rem; line-height: 1; }
+        .file-card { cursor: context-menu; }
+        #explorer-context-menu { position: fixed; z-index: 2000; min-width: 190px; }
+    </style>
+    <title>File Explorer</title>
+</head>
+<body class="py-4 bg-body-tertiary" data-current-folder-id="{{ current_folder[0] if current_folder else '' }}">
+<main class="container">
+    <header class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4">
+        <a href="{{ url_for('dashboard') }}" class="fs-4 text-decoration-none">Mezali Data Center</a>
+        <div class="d-flex gap-2"><a href="{{ url_for('chat_page') }}" class="btn btn-outline-primary">Chat</a><a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a></div>
+    </header>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div><h1 class="h3 mb-1">File Explorer</h1><p class="text-body-secondary mb-0">{{ (storage_usage / 1024 / 1024)|round(2) }} MB of {{ (storage_quota / 1024 / 1024 / 1024)|round(2) }} GB used</p></div>
+        <div class="d-flex gap-2">
+            <form action="{{ url_for('create_folder') }}" method="POST" class="input-group">
+                <input class="form-control" name="name" placeholder="New folder name" required>
+                <input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}">
+                <button class="btn btn-outline-primary" type="submit">Create folder</button>
+            </form>
+        </div>
+    </div>
+    <nav class="mb-3" aria-label="Folder navigation"><a href="{{ url_for('file_explorer') }}" class="folder-drop-target text-decoration-none d-inline-block p-1 rounded" data-folder-id="">Root</a>{% if parent_folder %} <span class="text-body-secondary">/</span> <a href="{{ url_for('file_explorer', folder_id=parent_folder[0]) }}">{{ parent_folder[1] }}</a>{% endif %}{% if current_folder %} <span class="text-body-secondary">/</span> <strong>{{ current_folder[1] }}</strong>{% endif %}</nav>
+    <div class="row g-3">
+        {% for folder in child_folders %}
+        <div class="col-sm-6 col-lg-3"><a href="{{ url_for('file_explorer', folder_id=folder[0]) }}" class="folder-drop-target draggable-folder text-decoration-none" draggable="true" data-folder-id="{{ folder[0] }}" data-folder-name="{{ folder[1] }}"><div class="border rounded bg-white p-3 h-100"><i class="bi bi-folder-fill file-type-icon text-warning d-block mb-2" aria-hidden="true"></i><strong>{{ folder[1] }}</strong><small class="d-block text-body-secondary">Drop files here</small></div></a></div>
+        {% endfor %}
+        {% for item in files %}
+        <div class="col-sm-6 col-lg-4">
+            <article class="border rounded bg-white p-3 h-100 draggable-file file-card" draggable="true" data-file-id="{{ item[0] }}" data-file-name="{{ item[1] }}" data-file-mime="{{ item[2] }}" data-file-size="{{ item[3] }}" data-file-url="{{ url_for('preview_file', item_id=item[0]) }}" data-file-download="{{ url_for('download_file', item_id=item[0]) }}">
+                <div class="d-flex align-items-start justify-content-between gap-2">
+                    {% if item[2].startswith('image/') %}<i class="bi bi-file-earmark-image file-type-icon text-success" title="Image" aria-label="Image file"></i>
+                    {% elif item[2].startswith('video/') %}<i class="bi bi-file-earmark-play file-type-icon text-danger" title="Video" aria-label="Video file"></i>
+                    {% elif item[2].startswith('audio/') %}<i class="bi bi-file-earmark-music file-type-icon text-info" title="Audio" aria-label="Audio file"></i>
+                    {% elif item[2] == 'application/pdf' %}<i class="bi bi-file-earmark-pdf file-type-icon text-danger" title="PDF" aria-label="PDF file"></i>
+                    {% elif item[2] in ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'] %}<i class="bi bi-file-earmark-zip file-type-icon text-warning" title="Archive" aria-label="Archive file"></i>
+                    {% elif item[2].startswith('text/') or 'document' in item[2] or 'spreadsheet' in item[2] or 'presentation' in item[2] %}<i class="bi bi-file-earmark-text file-type-icon text-primary" title="Document" aria-label="Document file"></i>
+                    {% else %}<i class="bi bi-file-earmark file-type-icon text-secondary" title="File" aria-label="File"></i>{% endif %}
+                    <strong class="text-break text-end">{{ item[1] }}</strong>
+                </div>
+            </article>
+        </div>
+        {% else %}<div class="col-12"><p class="text-body-secondary">This folder is empty.</p></div>{% endfor %}
+    </div>
+    <section class="mt-4">
+        <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#upload-panel" aria-expanded="false" aria-controls="upload-panel">
+            <i class="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i> Upload files
+        </button>
+        <div class="collapse mt-2" id="upload-panel">
+            <form id="upload-form" action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data" class="border rounded bg-white p-3">
+                <div id="drop-zone" class="drop-zone rounded bg-light text-center p-4 mb-3" tabindex="0" role="button" aria-label="Drag and drop files here or choose files">
+                    <i class="bi bi-cloud-arrow-up fs-1 text-primary" aria-hidden="true"></i>
+                    <p class="mb-1"><strong>Drag and drop files here</strong></p>
+                    <p class="text-body-secondary mb-0">or choose a file below</p>
+                </div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6"><label class="form-label" for="file">Choose files</label><input class="form-control" id="file" type="file" name="file" multiple></div>
+                    <div class="col-md-4"><label class="form-label" for="upload-folder">Folder</label><select class="form-select" id="upload-folder" name="folder_id"><option value="">Root</option>{% for folder in folders %}<option value="{{ folder[0] }}" {% if current_folder and folder[0] == current_folder[0] %}selected{% endif %}>{{ folder[1] }}</option>{% endfor %}</select></div>
+                    <input type="hidden" name="next" value="{{ url_for('file_explorer', folder_id=current_folder[0] if current_folder else None) }}">
+                    <div class="col-md-2"><button id="upload-button" class="btn btn-primary w-100" type="submit" disabled>Upload selected</button></div>
+                </div>
+                <div id="upload-queue" class="mt-3" aria-live="polite"></div>
+                <p class="small text-body-secondary mb-0">Files larger than 500 MB are not allowed by the server.</p>
+            </form>
+        </div>
+    </section>
+</main>
+<div id="explorer-context-menu" class="dropdown-menu shadow" role="menu" aria-label="File explorer actions">
+    <button class="dropdown-item" type="button" id="context-details"><i class="bi bi-info-circle me-2"></i>File details</button>
+    <button class="dropdown-item" type="button" id="context-edit"><i class="bi bi-pencil me-2"></i>Edit text file</button>
+    <button class="dropdown-item" type="button" id="context-rename"><i class="bi bi-input-cursor-text me-2"></i>Rename file</button>
+    <button class="dropdown-item text-danger" type="button" id="context-delete"><i class="bi bi-trash me-2"></i>Delete file</button>
+    <button class="dropdown-item" type="button" id="context-folder-details"><i class="bi bi-info-circle me-2"></i>Folder details</button>
+    <button class="dropdown-item text-danger" type="button" id="context-folder-delete"><i class="bi bi-folder-x me-2"></i>Delete folder</button>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item" type="button" id="context-new-file"><i class="bi bi-file-earmark-plus me-2"></i>New file</button>
+    <button class="dropdown-item" type="button" id="context-new-folder"><i class="bi bi-folder-plus me-2"></i>New folder</button>
+</div>
+<div class="modal fade" id="preview-modal" tabindex="-1" aria-labelledby="preview-title" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="h5 modal-title" id="preview-title">File preview</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="preview-body"></div><div class="modal-footer"><form id="edit-file-form" method="POST" class="d-none"><input type="hidden" name="content" id="edited-content"><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"><button class="btn btn-success" type="submit">Save changes</button></form><form id="delete-file-form" method="POST"><input type="hidden" name="next" value="{{ url_for('file_explorer', folder_id=current_folder[0] if current_folder else None) }}"><button class="btn btn-outline-danger" id="delete-file-button" type="submit">Delete file</button></form><a class="btn btn-primary" id="preview-download" href="#">Download</a><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>
+<div class="modal fade" id="create-file-modal" tabindex="-1" aria-labelledby="create-file-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_file') }}" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="create-file-title">Create new file</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="new-file-name">File name</label><input class="form-control" id="new-file-name" name="name" placeholder="notes.txt" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Create file</button></div></form></div></div></div>
+<div class="modal fade" id="create-folder-modal" tabindex="-1" aria-labelledby="create-folder-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_folder') }}" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="create-folder-title">Create new folder</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="new-folder-name">Folder name</label><input class="form-control" id="new-folder-name" name="name" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Create folder</button></div></form></div></div></div>
+<div class="modal fade" id="folder-details-modal" tabindex="-1" aria-labelledby="folder-details-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h2 class="h5 modal-title" id="folder-details-title">Folder details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="folder-details-body"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>
+<div class="modal fade" id="rename-file-modal" tabindex="-1" aria-labelledby="rename-file-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="rename-file-form" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="rename-file-title">Rename file</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="rename-file-name">File name</label><input class="form-control" id="rename-file-name" name="name" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Save name</button></div></form></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+<script>
+    const uploadForm = document.getElementById('upload-form');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file');
+    const uploadFolder = document.getElementById('upload-folder');
+    const uploadNext = uploadForm.querySelector('input[name="next"]');
+    const uploadButton = document.getElementById('upload-button');
+    const uploadQueue = document.getElementById('upload-queue');
+    const dropMessage = dropZone.querySelector('p');
+    const maxUploadSize = 500 * 1024 * 1024;
+    let queuedFiles = [];
+
+    function formatSize(bytes) {
+        if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+        return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+    }
+
+    function renderUploadQueue() {
+        uploadQueue.replaceChildren();
+        queuedFiles.forEach((file, index) => {
+            const row = document.createElement('div');
+            row.className = 'd-flex align-items-center gap-2 border rounded p-2 mb-2';
+            const label = document.createElement('span');
+            label.className = 'text-break flex-grow-1';
+            label.textContent = `${file.name} (${formatSize(file.size)})`;
+            const status = document.createElement('span');
+            status.className = file.size > maxUploadSize ? 'text-danger small' : 'text-body-secondary small';
+            status.textContent = file.size > maxUploadSize ? 'Too large: maximum is 500 MB' : 'Ready to upload';
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'btn btn-sm btn-outline-secondary';
+            remove.textContent = 'Remove';
+            remove.addEventListener('click', () => { queuedFiles.splice(index, 1); renderUploadQueue(); });
+            row.append(label, status, remove);
+            uploadQueue.appendChild(row);
+        });
+        uploadButton.disabled = queuedFiles.length === 0 || queuedFiles.some(file => file.size > maxUploadSize);
+    }
+
+    function addFiles(files) {
+        queuedFiles = queuedFiles.concat([...files]);
+        renderUploadQueue();
+    }
+
+    fileInput.addEventListener('change', () => addFiles(fileInput.files));
+    ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropZone.classList.add('is-dragging');
+    }));
+    ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropZone.classList.remove('is-dragging');
+    }));
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            fileInput.click();
+        }
+    });
+    dropZone.addEventListener('drop', async event => {
+        addFiles(event.dataTransfer.files);
+        dropMessage.textContent = 'Files queued. Review the list, then click Upload selected.';
+    });
+
+    uploadForm.addEventListener('submit', event => {
+        event.preventDefault();
+        if (!queuedFiles.length || queuedFiles.some(file => file.size > maxUploadSize)) return;
+        uploadButton.disabled = true;
+        let completed = 0;
+        const rows = [...uploadQueue.children];
+        const uploadNextFile = index => {
+            if (index >= queuedFiles.length) { window.location.reload(); return; }
+            const file = queuedFiles[index];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder_id', uploadFolder.value);
+            formData.append('next', uploadNext.value);
+            const request = new XMLHttpRequest();
+            const status = rows[index].children[1];
+            status.className = 'text-primary small';
+            status.textContent = 'Uploading 0%';
+            request.upload.addEventListener('progress', progress => {
+                if (progress.lengthComputable) status.textContent = `Uploading ${Math.round(progress.loaded / progress.total * 100)}%`;
+            });
+            request.addEventListener('load', () => {
+                if (request.status >= 200 && request.status < 400) {
+                    completed += 1;
+                    status.className = 'text-success small';
+                    status.textContent = 'Uploaded';
+                    uploadNextFile(index + 1);
+                } else {
+                    status.className = 'text-danger small';
+                    status.textContent = request.status === 413 ? 'Rejected: maximum is 500 MB' : 'Upload failed';
+                    uploadButton.disabled = false;
+                }
+            });
+            request.addEventListener('error', () => { status.className = 'text-danger small'; status.textContent = 'Upload failed'; uploadButton.disabled = false; });
+            request.open('POST', uploadForm.action);
+            request.send(formData);
+        };
+        uploadNextFile(0);
+    });
+
+    function moveFileToFolder(fileId, fileName, folderId) {
+        const destination = folderId ? 'that folder' : 'the root folder';
+        if (!window.confirm(`Move "${fileName}" to ${destination}?`)) return;
+        const formData = new FormData();
+        formData.append('folder_id', folderId);
+        formData.append('current_folder_id', document.body.dataset.currentFolderId);
+        fetch(`{{ url_for('file_explorer') }}`.replace('/files', `/files/${fileId}/move`), { method: 'POST', body: formData })
+            .then(response => { if (!response.ok) throw new Error('The file could not be moved.'); window.location.reload(); })
+            .catch(error => window.alert(error.message));
+    }
+
+    function moveFolderToFolder(folderId, folderName, parentId) {
+        const destination = parentId ? 'that folder' : 'the root folder';
+        if (!window.confirm(`Move folder "${folderName}" to ${destination}?`)) return;
+        const formData = new FormData();
+        formData.append('parent_id', parentId);
+        formData.append('current_folder_id', document.body.dataset.currentFolderId);
+        fetch(`/files/folders/${folderId}/move`, { method: 'POST', body: formData })
+            .then(response => { if (!response.ok) throw new Error('The folder could not be moved there.'); window.location.reload(); })
+            .catch(error => window.alert(error.message));
+    }
+
+    document.querySelectorAll('.draggable-file').forEach(fileCard => {
+        fileCard.addEventListener('dragstart', event => {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-storage-file-id', fileCard.dataset.fileId);
+            event.dataTransfer.setData('text/plain', fileCard.dataset.fileName);
+        });
+    });
+    document.querySelectorAll('.draggable-folder').forEach(folder => {
+        folder.addEventListener('dragstart', event => {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-storage-folder-id', folder.dataset.folderId);
+            event.dataTransfer.setData('text/plain', folder.dataset.folderName);
+        });
+        folder.addEventListener('click', event => {
+            if (event.detail === 0) return;
+        });
+    });
+    document.querySelectorAll('.folder-drop-target').forEach(folderTarget => {
+        folderTarget.addEventListener('dragover', event => {
+            const isFile = event.dataTransfer.types.includes('application/x-storage-file-id');
+            const isFolder = event.dataTransfer.types.includes('application/x-storage-folder-id');
+            if (!isFile && !isFolder) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            folderTarget.classList.add('is-file-over');
+        });
+        folderTarget.addEventListener('dragleave', () => folderTarget.classList.remove('is-file-over'));
+        folderTarget.addEventListener('drop', event => {
+            const isFile = event.dataTransfer.types.includes('application/x-storage-file-id');
+            const isFolder = event.dataTransfer.types.includes('application/x-storage-folder-id');
+            if (!isFile && !isFolder) return;
+            event.preventDefault();
+            folderTarget.classList.remove('is-file-over');
+            const targetFolderId = folderTarget.dataset.folderId || null;
+            if (isFolder) {
+                moveFolderToFolder(event.dataTransfer.getData('application/x-storage-folder-id'), event.dataTransfer.getData('text/plain'), targetFolderId);
+            } else {
+                moveFileToFolder(event.dataTransfer.getData('application/x-storage-file-id'), event.dataTransfer.getData('text/plain'), targetFolderId);
+            }
+        });
+    });
+
+    const previewModal = new bootstrap.Modal(document.getElementById('preview-modal'));
+    const editFileForm = document.getElementById('edit-file-form');
+    const editedContent = document.getElementById('edited-content');
+    const previewBody = document.getElementById('preview-body');
+    const explorerContextMenu = document.getElementById('explorer-context-menu');
+    let selectedFileCard = null;
+    let selectedFolderCard = null;
+
+    function hideExplorerContextMenu() {
+        explorerContextMenu.style.display = 'none';
+        selectedFileCard = null;
+        selectedFolderCard = null;
+    }
+
+    function showExplorerContextMenu(event, fileCard = null, folderCard = null) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectedFileCard = fileCard;
+        selectedFolderCard = folderCard;
+        document.getElementById('context-details').classList.toggle('d-none', !fileCard);
+        document.getElementById('context-delete').classList.toggle('d-none', !fileCard);
+        document.getElementById('context-edit').classList.toggle('d-none', !fileCard || !fileCard.dataset.fileMime.startsWith('text/'));
+        document.getElementById('context-rename').classList.toggle('d-none', !fileCard);
+        document.getElementById('context-folder-details').classList.toggle('d-none', !folderCard);
+        document.getElementById('context-folder-delete').classList.toggle('d-none', !folderCard);
+        explorerContextMenu.style.display = 'block';
+        explorerContextMenu.style.left = `${Math.min(event.clientX, window.innerWidth - explorerContextMenu.offsetWidth - 8)}px`;
+        explorerContextMenu.style.top = `${Math.min(event.clientY, window.innerHeight - explorerContextMenu.offsetHeight - 8)}px`;
+    }
+
+    function openFileDetails(fileCard) {
+        const name = fileCard.dataset.fileName;
+        const mime = fileCard.dataset.fileMime;
+        const size = Number(fileCard.dataset.fileSize);
+        const body = document.getElementById('preview-body');
+        document.getElementById('preview-title').textContent = name;
+        document.getElementById('preview-download').href = fileCard.dataset.fileDownload;
+        document.getElementById('delete-file-form').action = `/storage/${fileCard.dataset.fileId}/delete`;
+        editFileForm.classList.add('d-none');
+        editFileForm.action = `/files/${fileCard.dataset.fileId}/edit`;
+        body.replaceChildren();
+        const details = document.createElement('p');
+        const sizeText = size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(2)} MB` : `${(size / 1024).toFixed(1)} KB`;
+        details.textContent = `File name: ${name} | Type: ${mime} | Size: ${sizeText}`;
+        body.appendChild(details);
+        if (mime.startsWith('text/')) {
+            const editor = document.createElement('textarea');
+            editor.className = 'form-control font-monospace';
+            editor.rows = 18;
+            editor.setAttribute('aria-label', `Edit ${name}`);
+            editor.placeholder = 'This file is empty.';
+            body.appendChild(editor);
+            fetch(fileCard.dataset.fileUrl).then(response => response.text()).then(content => { editor.value = content; });
+            editFileForm.classList.remove('d-none');
+        } else if (mime.startsWith('image/')) {
+            const image = document.createElement('img'); image.className = 'img-fluid rounded'; image.src = fileCard.dataset.fileUrl; image.alt = name; body.appendChild(image);
+        } else if (mime.startsWith('video/')) {
+            const video = document.createElement('video'); video.className = 'w-100 rounded'; video.controls = true; video.src = fileCard.dataset.fileUrl; body.appendChild(video);
+        } else if (mime === 'application/pdf') {
+            const pdf = document.createElement('iframe'); pdf.className = 'w-100'; pdf.style.height = '65vh'; pdf.src = fileCard.dataset.fileUrl; pdf.title = 'PDF preview'; body.appendChild(pdf);
+        } else {
+            const note = document.createElement('p'); note.className = 'text-body-secondary'; note.textContent = 'Preview is not available for this file type.'; body.appendChild(note);
+        }
+        previewModal.show();
+    }
+
+    document.querySelectorAll('.file-card').forEach(fileCard => fileCard.addEventListener('contextmenu', event => showExplorerContextMenu(event, fileCard)));
+    document.querySelectorAll('.draggable-folder').forEach(folderCard => folderCard.addEventListener('contextmenu', event => showExplorerContextMenu(event, null, folderCard)));
+    document.querySelector('main').addEventListener('contextmenu', event => {
+        if (!event.target.closest('.file-card') && !event.target.closest('a, button, input, select, form')) showExplorerContextMenu(event);
+    });
+    explorerContextMenu.addEventListener('click', event => {
+        const action = event.target.closest('button')?.id;
+        if (action === 'context-details' && selectedFileCard) openFileDetails(selectedFileCard);
+        if (action === 'context-edit' && selectedFileCard) openFileDetails(selectedFileCard);
+        if (action === 'context-rename' && selectedFileCard) {
+            const renameForm = document.getElementById('rename-file-form');
+            renameForm.action = `/files/${selectedFileCard.dataset.fileId}/rename`;
+            document.getElementById('rename-file-name').value = selectedFileCard.dataset.fileName;
+            new bootstrap.Modal(document.getElementById('rename-file-modal')).show();
+        }
+        if (action === 'context-delete' && selectedFileCard) {
+            const form = document.getElementById('delete-file-form');
+            form.action = `/storage/${selectedFileCard.dataset.fileId}/delete`;
+            if (window.confirm(`Delete "${selectedFileCard.dataset.fileName}"? This cannot be undone.`)) form.submit();
+        }
+        if (action === 'context-folder-details' && selectedFolderCard) {
+            document.getElementById('folder-details-title').textContent = selectedFolderCard.dataset.folderName;
+            document.getElementById('folder-details-body').textContent = `Folder name: ${selectedFolderCard.dataset.folderName}`;
+            new bootstrap.Modal(document.getElementById('folder-details-modal')).show();
+        }
+        if (action === 'context-folder-delete' && selectedFolderCard) {
+            if (window.confirm(`Delete folder "${selectedFolderCard.dataset.folderName}"? Its files will be moved to Root and its subfolders will be removed.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/files/folders/${selectedFolderCard.dataset.folderId}/delete`;
+                const next = document.createElement('input');
+                next.type = 'hidden'; next.name = 'current_folder_id'; next.value = document.body.dataset.currentFolderId;
+                form.appendChild(next); document.body.appendChild(form); form.submit();
+            }
+        }
+        if (action === 'context-new-file') new bootstrap.Modal(document.getElementById('create-file-modal')).show();
+        if (action === 'context-new-folder') new bootstrap.Modal(document.getElementById('create-folder-modal')).show();
+        hideExplorerContextMenu();
+    });
+    document.addEventListener('click', event => {
+        if (!event.target.closest('#explorer-context-menu')) hideExplorerContextMenu();
+    });
+    window.addEventListener('scroll', hideExplorerContextMenu);
+    editFileForm.addEventListener('submit', event => {
+        const editor = previewBody.querySelector('textarea');
+        if (!editor) return;
+        editedContent.value = editor.value;
+    });
+    document.getElementById('delete-file-form').addEventListener('submit', event => {
+        const fileName = document.getElementById('preview-title').textContent;
+        if (!window.confirm(`Delete "${fileName}"? This cannot be undone.`)) event.preventDefault();
+    });
+</script>
+</body>
+</html>

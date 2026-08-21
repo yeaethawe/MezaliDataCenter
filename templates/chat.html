@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
+    <style>
+        :root { --chat-bg: #f8f9fa; --bubble-own: #0d6efd; --bubble-other: #e9ecef; --bubble-radius: 16px; }
+        body { background: var(--chat-bg) !important; }
+        .chat-messages { height: 360px; overflow-y: auto; }
+        .chat-bubble { border-radius: var(--bubble-radius); max-width: 78%; padding: .55rem .8rem; }
+        .chat-bubble.own { background: var(--bubble-own); color: #fff; margin-left: auto; }
+        .chat-bubble.other { background: var(--bubble-other); color: #212529; }
+        .chat-sender { display: block; font-size: .72rem; line-height: 1; margin: -.55rem -.8rem .5rem; padding: .35rem .55rem; background: rgba(0, 0, 0, .12); }
+        .chat-avatar { width: 28px; height: 28px; object-fit: cover; vertical-align: middle; }
+        .chat-bubble.other .chat-sender { border-radius: 0 var(--bubble-radius) 0 0; }
+        .chat-bubble.own .chat-sender { border-radius: var(--bubble-radius) 0 0 0; }
+        .chat-bubble.own .chat-sender { text-align: right; }
+        .chat-attachment { display: inline-flex; flex-direction: column; align-items: flex-start; gap: .25rem; }
+        .chat-attachment-icon { font-size: 1.35rem; }
+        .chat-attachment-preview { width: 200px; max-width: 100%; height: auto; border-radius: 8px; }
+        .theme-ocean { --chat-bg: #e8f4f8; --bubble-own: #087f8c; --bubble-other: #d4eef0; }
+        .theme-sunset { --chat-bg: #fff4e6; --bubble-own: #d9480f; --bubble-other: #ffe8cc; }
+        .theme-forest { --chat-bg: #edf7ed; --bubble-own: #2b8a3e; --bubble-other: #d8f5d0; }
+    </style>
+    <title>Private Chat</title>
+</head>
+<body class="py-4 bg-body-tertiary" data-conversation-id="{{ conversation[0] if conversation else '' }}" data-current-user-id="{{ user[0] }}">
+    <main class="container">
+        <header class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4">
+            <a href="{{ url_for('dashboard') }}" class="fs-4 text-decoration-none">Mezali Data Center</a>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#chatSettings" aria-expanded="false" aria-controls="chatSettings">Chat settings</button>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a>
+            </div>
+        </header>
+        <h1 class="h3 mb-4">Chat</h1>
+        <div class="row g-3">
+            <aside class="col-lg-4">
+                <form action="{{ url_for('chat_page') }}" method="GET" class="input-group mb-3">
+                    <input class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search username or email" aria-label="Search username or email">
+                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                </form>
+                {% if search_query %}
+                <div class="mb-3">
+                    <h2 class="h6">Search results</h2>
+                    {% for result in search_results %}
+                    <a class="d-block border rounded p-2 mb-2 text-decoration-none" href="{{ url_for('chat_page', user_id=result[0]) }}">
+                        <strong>{{ result[1] }}</strong><br><small>{{ result[2] }}</small>
+                    </a>
+                    {% else %}<p class="text-body-secondary">No users found.</p>{% endfor %}
+                </div>
+                {% endif %}
+                <h2 class="h6">Conversations</h2>
+                <div class="list-group">
+                    {% for item in conversations[:5] %}
+                    <a class="list-group-item list-group-item-action {% if conversation and item[0] == conversation[0] %}active{% endif %}" href="{{ url_for('chat_page', conversation_id=item[0]) }}">
+                        <div class="d-flex justify-content-between"><strong>{{ item[2] }}</strong>{% if item[5] %}<small>{{ item[5][:10] }}</small>{% endif %}</div>
+                        <small>{{ item[3] }}</small>
+                        {% if item[4] %}<div class="text-truncate small mt-1">{{ item[4] }}</div>{% endif %}
+                    </a>
+                    {% else %}<p class="text-body-secondary">No conversations yet.</p>{% endfor %}
+                </div>
+                {% if conversations|length > 5 %}
+                <button class="btn btn-sm btn-outline-secondary mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#more-conversations" aria-expanded="false" aria-controls="more-conversations">Show more conversations</button>
+                <div class="collapse mt-2" id="more-conversations">
+                    <div class="list-group">
+                    {% for item in conversations[5:] %}
+                    <a class="list-group-item list-group-item-action {% if conversation and item[0] == conversation[0] %}active{% endif %}" href="{{ url_for('chat_page', conversation_id=item[0]) }}">
+                        <div class="d-flex justify-content-between"><strong>{{ item[2] }}</strong>{% if item[5] %}<small>{{ item[5][:10] }}</small>{% endif %}</div>
+                        <small>{{ item[3] }}</small>
+                        {% if item[4] %}<div class="text-truncate small mt-1">{{ item[4] }}</div>{% endif %}
+                    </a>
+                    {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </aside>
+            <section class="col-lg-8">
+            {% if not other_user %}
+            <div class="border rounded bg-white p-4 text-body-secondary">Search for a user to start chatting.</div>
+            {% elif conversation %}
+            <div class="border rounded bg-white p-3">
+                <h2 class="h5">{% if other_user[3] %}<img class="rounded-circle chat-avatar me-1" src="{{ url_for('profile_picture', user_id=other_user[0]) }}" alt="">{% endif %}{{ other_user[1] }} <small class="text-body-secondary">{{ other_user[2] }}</small></h2>
+                <section id="messages" class="border rounded p-3 mb-3" style="height: 360px; overflow-y: auto;">
+                    {% for message in messages %}
+                    <div class="mb-2 d-flex {% if message[1] == user[0] %}justify-content-end{% endif %}">
+                        <div class="chat-bubble {% if message[1] == user[0] %}own{% else %}other{% endif %}">
+                            <span class="chat-sender">{% if message[8] %}<img class="rounded-circle chat-avatar me-1" src="{{ url_for('profile_picture', user_id=message[1]) }}" alt="">{% endif %}{{ message[2] }}</span>
+                            {% if message[3] %}<div>{{ message[3] }}</div>{% endif %}
+                            {% if message[5] %}<button type="button" class="btn btn-link p-0 file-preview-link chat-attachment {% if message[1] == user[0] %}link-light{% endif %}" data-file-id="{{ message[4] }}" data-file-name="{{ message[5] }}" data-file-mime="{{ message[6] }}" data-file-url="{{ url_for('preview_shared_file', conversation_id=conversation[0], item_id=message[4]) }}" data-download-url="{{ url_for('download_shared_file', conversation_id=conversation[0], item_id=message[4]) }}"></button>{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </section>
+                <form id="message-form" class="input-group">
+                    <input id="message-input" class="form-control" type="text" placeholder="Write a message" autocomplete="off">
+                    <select id="file-input" class="form-select" aria-label="Attach a stored file" style="max-width: 220px;">
+                        <option value="">Attach file</option>
+                        {% for item in storage_items %}<option value="{{ item[0] }}">{{ item[1] }}</option>{% endfor %}
+                    </select>
+                    <button class="btn btn-primary" type="submit">Send</button>
+                </form>
+            </div>
+            {% endif %}
+            </section>
+        </div>
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="chatSettings" aria-labelledby="chatSettingsTitle">
+            <div class="offcanvas-header"><h2 class="h5" id="chatSettingsTitle">Chat settings</h2><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button></div>
+            <div class="offcanvas-body">
+                <label class="form-label" for="theme-select">Theme</label>
+                <select class="form-select mb-3" id="theme-select"><option value="default">Default</option><option value="ocean">Ocean</option><option value="sunset">Sunset</option><option value="forest">Forest</option></select>
+                <label class="form-label" for="bubble-style">Bubble shape</label>
+                <select class="form-select mb-3" id="bubble-style"><option value="rounded">Rounded</option><option value="soft">Soft</option><option value="square">Square</option></select>
+                <label class="form-label" for="bubble-color">Your bubble color</label>
+                <input class="form-control form-control-color mb-3" type="color" id="bubble-color" value="#0d6efd" title="Choose your bubble color">
+                <button class="btn btn-outline-danger" type="button" id="reset-chat-settings">Reset settings</button>
+            </div>
+        </div>
+        <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="h5 modal-title" id="fileModalTitle">File details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="fileModalBody"></div><div class="modal-footer"><a class="btn btn-primary" id="fileDownload" href="#">Download file</a><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div>
+        </div>
+        <audio id="message-notification" preload="auto" src="{{ url_for('chat_notification_sound') }}"></audio>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+        {% if conversation %}
+        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+            const conversationId = Number(document.body.dataset.conversationId);
+            const currentUserId = Number(document.body.dataset.currentUserId);
+            const messages = document.getElementById('messages');
+            const input = document.getElementById('message-input');
+            const fileInput = document.getElementById('file-input');
+            const fileModal = new bootstrap.Modal(document.getElementById('fileModal'));
+            const notificationSound = document.getElementById('message-notification');
+            socket.on('connect', () => socket.emit('join_chat', {conversation_id: conversationId}));
+            socket.on('new_message', (message) => {
+                const isOwnMessage = message.sender_id === currentUserId;
+                if (!isOwnMessage) {
+                    notificationSound.currentTime = 0;
+                    notificationSound.play().catch(() => {});
+                }
+                const line = document.createElement('div');
+                line.className = `mb-2 d-flex ${isOwnMessage ? 'justify-content-end' : ''}`;
+                const bubble = document.createElement('div');
+                bubble.className = `chat-bubble ${isOwnMessage ? 'own' : 'other'}`;
+                const sender = document.createElement('span');
+                sender.className = 'chat-sender';
+                sender.textContent = isOwnMessage ? 'You' : 'Other user';
+                if (message.profile_picture) {
+                    const avatar = document.createElement('img');
+                    avatar.className = 'rounded-circle chat-avatar me-1';
+                    avatar.src = `/profile/${message.sender_id}/picture`;
+                    avatar.alt = '';
+                    sender.prepend(avatar);
+                }
+                const text = document.createElement('div');
+                text.textContent = message.body || 'File shared';
+                bubble.append(sender, text);
+                if (message.storage_item_id) {
+                    const attachment = document.createElement('button');
+                    attachment.type = 'button';
+                    attachment.className = `btn btn-link p-0 chat-attachment file-preview-link ${isOwnMessage ? 'link-light' : ''}`;
+                    attachment.dataset.fileId = message.storage_item_id;
+                    attachment.dataset.fileName = message.filename || 'Shared file';
+                    attachment.dataset.fileMime = message.mime_type || '';
+                    attachment.dataset.fileUrl = `/chat/${conversationId}/files/${message.storage_item_id}/preview`;
+                    attachment.dataset.downloadUrl = `/chat/${conversationId}/files/${message.storage_item_id}/download`;
+                    decorateAttachment(attachment);
+                    bubble.appendChild(attachment);
+                    bindFilePreview(attachment);
+                }
+                line.appendChild(bubble);
+                messages.appendChild(line);
+                messages.scrollTop = messages.scrollHeight;
+            });
+            document.getElementById('message-form').addEventListener('submit', (event) => {
+                event.preventDefault();
+                const body = input.value.trim();
+                const storageItemId = fileInput.value || null;
+                if (!body && !storageItemId) return;
+                socket.emit('send_message', {conversation_id: conversationId, body, storage_item_id: storageItemId});
+                input.value = '';
+                fileInput.value = '';
+            });
+        </script>
+        {% endif %}
+        <script src="{{ url_for('static', filename='theme.js') }}"></script>
+        <script>
+            const chatSettingsKey = 'mezali-chat-settings';
+            const page = document.body;
+            const settings = JSON.parse(localStorage.getItem(chatSettingsKey) || '{}');
+            const themeSelect = document.getElementById('theme-select');
+            const bubbleStyle = document.getElementById('bubble-style');
+            const bubbleColor = document.getElementById('bubble-color');
+            function applyChatSettings() {
+                page.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+                if (settings.theme && settings.theme !== 'default') page.classList.add(`theme-${settings.theme}`);
+                page.style.setProperty('--bubble-own', settings.color || '#0d6efd');
+                page.style.setProperty('--bubble-radius', settings.shape === 'square' ? '2px' : settings.shape === 'soft' ? '8px' : '16px');
+                if (themeSelect) themeSelect.value = settings.theme || 'default';
+                if (bubbleStyle) bubbleStyle.value = settings.shape || 'rounded';
+                if (bubbleColor) bubbleColor.value = settings.color || '#0d6efd';
+            }
+            function saveChatSettings() { localStorage.setItem(chatSettingsKey, JSON.stringify(settings)); applyChatSettings(); }
+            themeSelect?.addEventListener('change', event => { settings.theme = event.target.value; saveChatSettings(); });
+            bubbleStyle?.addEventListener('change', event => { settings.shape = event.target.value; saveChatSettings(); });
+            bubbleColor?.addEventListener('input', event => { settings.color = event.target.value; saveChatSettings(); });
+            document.getElementById('reset-chat-settings')?.addEventListener('click', () => { localStorage.removeItem(chatSettingsKey); Object.keys(settings).forEach(key => delete settings[key]); applyChatSettings(); });
+            applyChatSettings();
+            function decorateAttachment(link) {
+                const mime = link.dataset.fileMime || '';
+                const name = link.dataset.fileName || 'Shared file';
+                const extension = name.split('.').pop().toLowerCase();
+                link.replaceChildren();
+                if (mime.startsWith('image/')) {
+                    const image = document.createElement('img');
+                    image.className = 'chat-attachment-preview';
+                    image.src = link.dataset.fileUrl;
+                    image.alt = name;
+                    link.appendChild(image);
+                } else {
+                    const icon = document.createElement('i');
+                    icon.className = 'bi chat-attachment-icon ' + (mime.startsWith('video/') ? 'bi-file-earmark-play' : mime.startsWith('audio/') ? 'bi-file-earmark-music' : mime === 'application/pdf' ? 'bi-file-earmark-pdf' : mime.startsWith('text/') ? 'bi-file-earmark-text' : 'bi-file-earmark');
+                    icon.setAttribute('aria-hidden', 'true');
+                    link.appendChild(icon);
+                }
+                const label = document.createElement('span');
+                label.textContent = name;
+                link.appendChild(label);
+            }
+
+            function bindFilePreview(link) { link.addEventListener('click', () => {
+                const name = link.dataset.fileName;
+                const extension = name.split('.').pop().toLowerCase();
+                const body = document.getElementById('fileModalBody');
+                document.getElementById('fileModalTitle').textContent = name;
+                document.getElementById('fileDownload').href = link.dataset.downloadUrl;
+                body.replaceChildren();
+                const details = document.createElement('p');
+                details.textContent = `File name: ${name} | Type: ${extension.toUpperCase()}`;
+                body.appendChild(details);
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+                    const image = document.createElement('img');
+                    image.className = 'img-fluid rounded';
+                    image.src = link.dataset.fileUrl;
+                    image.alt = name;
+                    body.appendChild(image);
+                } else if (['mp4', 'webm', 'mov', 'mkv'].includes(extension)) {
+                    const video = document.createElement('video');
+                    video.className = 'w-100 rounded';
+                    video.controls = true;
+                    video.src = link.dataset.fileUrl;
+                    body.appendChild(video);
+                } else if (extension === 'pdf') {
+                    const pdf = document.createElement('iframe');
+                    pdf.className = 'w-100';
+                    pdf.style.height = '60vh';
+                    pdf.src = link.dataset.fileUrl;
+                    pdf.title = 'PDF preview';
+                    body.appendChild(pdf);
+                } else {
+                    const unavailable = document.createElement('p');
+                    unavailable.className = 'text-body-secondary';
+                    unavailable.textContent = 'Preview is not available for this file type.';
+                    body.appendChild(unavailable);
+                }
+                fileModal.show();
+            }); }
+            document.querySelectorAll('.file-preview-link').forEach(link => { decorateAttachment(link); bindFilePreview(link); });
+        </script>
+    </main>
+</body>
+</html>

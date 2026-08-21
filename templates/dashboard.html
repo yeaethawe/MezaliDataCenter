@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+       <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
+    <style>
+        #dashboard-page.dark-mode .bg-white { background-color: #212529 !important; color: #f8f9fa; }
+        #dashboard-page.dark-mode .table { --bs-table-color: #f8f9fa; --bs-table-bg: #212529; }
+        #dashboard-page.dark-mode .border-bottom,
+        #dashboard-page.dark-mode .border { border-color: #495057 !important; }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
+    <title>Mezali Data Center</title>
+</head>
+<body class="align-items-center py-4 bg-body-tertiary" id="dashboard-page">
+    <div class="container"> 
+        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom"> 
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none"> 
+            <svg class="bi me-2" width="40" height="32" aria-hidden="true">
+                <use xlink:href="#bootstrap"></use>
+            </svg>
+                <span class="fs-4">Mezali Data Center</span>
+            </a>
+            <ul class="nav nav-pills">
+                <li class="nav-item"><a href="/users" class="nav-link">Users</a></li> 
+                <li class="nav-item"><a href="/products" class="nav-link">products</a></li> 
+                <li class="nav-item"><a href="/faqs" class="nav-link">FAQs</a></li> 
+            </ul> 
+        </header> 
+    </div>
+    <div class="container d-flex justify-content-center py-3 mb-4 border-bottom">
+        {% if user[3] %}<img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="{{ user[1] }} profile picture" class="rounded-circle me-2" width="64" height="64">{% endif %}
+        <p>Welcome to the Dashboard! {{user[1]}}</p>
+    </div>
+    <div class="container d-flex gap-2">
+        <a href="/logout" class="btn btn-danger">logout</a>
+        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#settings-modal">Settings</button>
+    </div>
+    <div class="modal fade" id="settings-modal" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h2 class="h5 modal-title" id="settings-title">Settings</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <section class="border rounded p-3 mb-3">
+                        <h3 class="h6">Profile picture</h3>
+                        {% if user[3] %}<img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Current profile picture" class="rounded-circle mb-2" width="80" height="80">{% endif %}
+                        <form action="{{ url_for('update_profile_picture_settings') }}" method="POST" id="profile-picture-form">
+                            <input class="form-control mb-2" id="profile-picture-input" type="file" accept="image/*" required>
+                            <div class="mb-2"><img id="profile-picture-preview" class="d-none mw-100" alt="Crop preview"></div>
+                            <input type="hidden" name="cropped_image" id="cropped-image">
+                            <button class="btn btn-primary" id="save-profile-picture" type="submit" disabled>Save profile picture</button>
+                        </form>
+                    </section>
+                    <section class="border rounded p-3 mb-3">
+                        <h3 class="h6">Edit username</h3>
+                        <form action="{{ url_for('update_profile_settings') }}" method="POST" class="input-group">
+                            <input class="form-control" name="name" value="{{ user[1] }}" required>
+                            <button class="btn btn-primary" type="submit">Save name</button>
+                        </form>
+                    </section>
+                    <section class="border rounded p-3 mb-3">
+                        <h3 class="h6">Reset password</h3>
+                        <form action="{{ url_for('update_password_settings') }}" method="POST" class="row g-2">
+                            <div class="col-md-4"><label class="form-label" for="current-password">Current password</label><input class="form-control" id="current-password" name="current_password" type="password" required></div>
+                            <div class="col-md-4"><label class="form-label" for="new-password">New password</label><input class="form-control" id="new-password" name="new_password" type="password" minlength="6" required></div>
+                            <div class="col-md-4"><label class="form-label" for="confirm-password">Confirm password</label><input class="form-control" id="confirm-password" name="confirm_password" type="password" minlength="6" required></div>
+                            <div class="col-12"><button class="btn btn-warning" type="submit">Change password</button></div>
+                        </form>
+                    </section>
+                    <section class="border rounded p-3">
+                        <h3 class="h6">Appearance</h3>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="dark-mode" data-dark-theme-toggle><label class="form-check-label" for="dark-mode">Dark mode</label></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="container">
+    <p>To add new products, please click the button below.</p>
+    <br>
+    <a href="/products/add" class="btn btn-primary">Add Product</a>
+    </div>
+    <hr>
+    <div class="container py-3">
+        <h2 class="h4">Private chat</h2>
+        <p>Use private messaging to communicate with other users.</p>
+        <a class="btn btn-primary" href="{{ url_for('chat_page') }}">Open chat</a>
+    </div>
+    <hr>
+    <div class="container py-3">
+        <h2 class="h4">Personal storage</h2>
+        <a class="btn btn-outline-primary mb-3" href="{{ url_for('file_explorer') }}">Open file explorer</a>
+        <p>{{ (storage_usage / 1024 / 1024)|round(2) }} MB of {{ (storage_quota / 1024 / 1024 / 1024)|round(2) }} GB used</p>
+        <progress class="w-100 mb-3" aria-label="Storage usage" value="{{ storage_usage }}" max="{{ storage_quota }}"></progress>
+        <form action="/storage/upload" method="POST" enctype="multipart/form-data" class="mb-3">
+            <div class="input-group">
+                <input class="form-control" type="file" name="file" required>
+                <button class="btn btn-primary" type="submit">Upload file</button>
+            </div>
+        </form>
+        {% if storage_items %}
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Name</th><th>Size</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for item in storage_items %}
+                <tr>
+                    <td>{{ item[1] }}</td>
+                    <td>{{ (item[3] / 1024)|round(1) }} KB</td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('download_file', item_id=item[0]) }}">Download</a>
+                        <form action="{{ url_for('remove_file', item_id=item[0]) }}" method="POST" onsubmit="return confirm('Delete {{ item[1]|e }}? This cannot be undone.');"><button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<p class="text-body-secondary">No files uploaded yet.</p>{% endif %}
+    </div>
+    <hr>
+    
+
+<script src="https://code.jquery.com/jquery-4.0.0.min.js" integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script>
+    const profileInput = document.getElementById('profile-picture-input');
+    const profilePreview = document.getElementById('profile-picture-preview');
+    const croppedImage = document.getElementById('cropped-image');
+    const saveProfilePicture = document.getElementById('save-profile-picture');
+    let profileCropper;
+    profileInput?.addEventListener('change', event => {
+        const file = event.target.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        if (profileCropper) profileCropper.destroy();
+        profilePreview.src = URL.createObjectURL(file);
+        profilePreview.classList.remove('d-none');
+        profileCropper = new Cropper(profilePreview, { aspectRatio: 1, viewMode: 1, autoCropArea: 1 });
+        saveProfilePicture.disabled = false;
+    });
+    document.getElementById('profile-picture-form')?.addEventListener('submit', () => {
+        croppedImage.value = profileCropper.getCroppedCanvas({ width: 320, height: 320, imageSmoothingQuality: 'high' }).toDataURL('image/jpeg', 0.82);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "index.html" %}
+{% block title %}Products{% endblock %}
+{% block nav %}
+<ul class="nav nav-pills">
+    <li class="nav-item"><a href="/" class="nav-link " aria-current="page">Home</a></li>
+    <li class="nav-item"><a href="/users" class="nav-link ">Users</a></li> 
+    <li class="nav-item"><a href="/products" class="nav-link active">products</a></li> 
+    <li class="nav-item"><a href="/faqs" class="nav-link">FAQs</a></li> 
+</ul> 
+{% endblock %}
+{% block content %} 
+
+<p>Add new product by clicking <a href="/products/add">here</a>.</p>
+<div class="my-3 p-3 bg-white rounded box-shadow">
+    <h6 class="border-bottom border-gray pb-2 mb-0">Registered Products</h6>
+    {% for i in products %}
+    <div class="media text-muted pt-3">
+        <img src="{{i[2]}}" width="300" class="mr-2 rounded">
+        <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+        <strong class="d-block text-gray-dark">{{i[1]}}</strong>
+        <p>$ {{i[3]}}</p>
+        {{i[4]}}
+        </p>
+
+    </div>
+    {%endfor%}
+</div>
+
+{% endblock %}

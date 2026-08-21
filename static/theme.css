@@ -1,0 +1,21 @@
+html[data-bs-theme="dark"] body {
+    background-color: #212529 !important;
+    color: #f8f9fa !important;
+}
+
+html[data-bs-theme="dark"] .bg-white,
+html[data-bs-theme="dark"] .bg-body-tertiary {
+    background-color: #212529 !important;
+    color: #f8f9fa !important;
+}
+
+html[data-bs-theme="dark"] .border,
+html[data-bs-theme="dark"] .border-bottom,
+html[data-bs-theme="dark"] .table {
+    border-color: #495057 !important;
+}
+
+html[data-bs-theme="dark"] .table {
+    --bs-table-bg: #212529;
+    --bs-table-color: #f8f9fa;
+}
