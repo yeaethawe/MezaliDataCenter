@@ -1331,38 +1331,73 @@ def chat_page():
         search_results=search_results,
         messages=messages,
         storage_items=get_storage_items(user_id),
+        storage_browser_index=_storage_browser_index(user_id),
         file_type_icon=file_type_icon,
     )
 
-@app.route("/api/storage/browse")
-def storage_browse():
-    user_id, response = require_user()
-    if response:
-        return response
-    folder_id = request.args.get("folder_id", type=int)
+def _storage_browser_payload(user_id, folder_id=None):
     if folder_id is not None and not get_storage_folder(folder_id, user_id):
-        abort(404)
+        return None
     current = get_storage_folder(folder_id, user_id) if folder_id else None
     folders = get_storage_folders_in_folder(user_id, folder_id)
     files = get_storage_items_in_folder(user_id, folder_id)
-    return jsonify({
+    return {
         "folder_id": folder_id,
         "folder_name": current[1] if current else "Root",
         "parent_id": current[2] if current else None,
-        "folders": [{"id": folder[0], "name": folder[1]} for folder in folders],
+        "folders": [{"id": folder[0], "name": folder[1], "parent_id": folder[3]} for folder in folders],
         "files": [
             {
                 "id": item[0],
                 "name": item[1],
                 "mime": item[2],
                 "size": item[3],
+                "folder_id": item[5],
                 "icon": file_type_icon(item[1], item[2])[0],
                 "color": file_type_icon(item[1], item[2])[1],
                 "preview_url": url_for("preview_file", item_id=item[0]) if (item[2] or "").startswith(("image/", "video/")) else None,
             }
             for item in files
         ],
-    })
+    }
+
+def _storage_browser_index(user_id):
+    folders = [
+        {"id": folder[0], "name": folder[1], "parent_id": folder[3]}
+        for folder in get_storage_folders(user_id)
+    ]
+    with database.sql() as con:
+        rows = con.execute(
+            "SELECT id, original_name, mime_type, size_bytes, folder_id FROM storage_items WHERE user_id = ? ORDER BY original_name COLLATE NOCASE",
+            (user_id,),
+        ).fetchall()
+    files = [
+        {
+            "id": item[0],
+            "name": item[1],
+            "mime": item[2],
+            "size": item[3],
+            "folder_id": item[4],
+            "icon": file_type_icon(item[1], item[2])[0],
+            "color": file_type_icon(item[1], item[2])[1],
+            "preview_url": url_for("preview_file", item_id=item[0]) if (item[2] or "").startswith(("image/", "video/")) else None,
+        }
+        for item in rows
+    ]
+    return {"folders": folders, "files": files}
+
+@app.route("/api/storage/browse")
+def storage_browse():
+    user_id, response = require_user()
+    if response:
+        if request.accept_mimetypes.best == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.path.startswith("/api/"):
+            return jsonify({"error": "authentication_required", "folders": [], "files": []}), 401
+        return response
+    folder_id = request.args.get("folder_id", type=int)
+    payload = _storage_browser_payload(user_id, folder_id)
+    if payload is None:
+        return jsonify({"error": "folder_not_found", "folders": [], "files": []}), 404
+    return jsonify(payload)
 
 @app.route("/chat/<int:conversation_id>/delete", methods=["POST"])
 def delete_chat(conversation_id):

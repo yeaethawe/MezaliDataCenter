@@ -796,7 +796,9 @@
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 0.6rem;
             max-height: 360px;
+            min-height: 140px;
             overflow: auto;
+            padding: 0.15rem;
         }
         .storage-browser-item {
             border: 1px solid var(--bs-border-color, #dee2e6);
@@ -807,17 +809,26 @@
             background: #fff;
             color: #212529;
             user-select: none;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 110px;
+            appearance: none;
+            -webkit-appearance: none;
         }
         .storage-browser-item:hover { border-color: #3390ec; }
         .storage-browser-item.selected { border-color: #3390ec; background: #e7f1ff; box-shadow: inset 0 0 0 1px #3390ec; }
         .storage-browser-item .thumb {
             height: 64px;
+            width: 100%;
             display: grid;
             place-items: center;
             overflow: hidden;
             margin-bottom: 0.35rem;
             border-radius: 0.35rem;
             background: #f8f9fa;
+            flex-shrink: 0;
         }
         .storage-browser-item .thumb img,
         .storage-browser-item .thumb video {
@@ -833,6 +844,7 @@
             max-height: 2.4em;
             overflow: hidden;
             color: #212529;
+            width: 100%;
         }
         .storage-browser-item small { color: #6c757d; }
         html[data-bs-theme="dark"] .storage-browser-item {
@@ -848,7 +860,26 @@
             border-color: #2ec4ee;
             box-shadow: inset 0 0 0 1px #2ec4ee;
         }
-        .storage-browser-crumb a { text-decoration: none; }
+        .storage-browser-crumb {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.25rem;
+            min-height: 1.25rem;
+            color: var(--tg-text);
+        }
+        .storage-browser-crumb a {
+            text-decoration: none;
+            color: var(--tg-send);
+            font-weight: 600;
+        }
+        .storage-browser-status {
+            grid-column: 1 / -1;
+            color: var(--tg-muted);
+            margin: 0;
+            padding: 1.5rem 0.5rem;
+            text-align: center;
+        }
         .theme-ocean { --bubble-own: #d4f3f7; --tg-send: #087f8c; --tg-sidebar-active: #087f8c; }
         .theme-sunset { --bubble-own: #ffe8cc; --tg-send: #d9480f; --tg-sidebar-active: #d9480f; }
         .theme-forest { --bubble-own: #d8f5d0; --tg-send: #2b8a3e; --tg-sidebar-active: #2b8a3e; }
@@ -1039,7 +1070,7 @@
             </form>
         </li>
     </ul>
-</div>
+            </div>
 {%- endmacro %}
 
 <div class="tg-app {% if conversation %}has-chat{% endif %}" id="tg-app">
@@ -1049,7 +1080,7 @@
             <form action="{{ url_for('chat_page') }}" method="GET" class="tg-search" role="search">
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <input type="search" name="q" value="{{ search_query }}" placeholder="Search" aria-label="Search username or email">
-            </form>
+                </form>
             <div class="tg-sidebar-actions">
                 <button class="tg-icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#chatSettings" aria-label="Chat settings">
                     <i class="bi bi-gear" aria-hidden="true"></i>
@@ -1057,10 +1088,10 @@
                 <a class="tg-icon-btn" href="{{ url_for('logout') }}" aria-label="Logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
             </div>
         </div>
-        {% if search_query %}
+                {% if search_query %}
         <div class="tg-search-results">
             <h2>People</h2>
-            {% for result in search_results %}
+                    {% for result in search_results %}
             <a class="tg-chat-row" href="{{ url_for('chat_page', user_id=result[0]) }}">
                 <span class="tg-avatar" aria-hidden="true">{{ initials(result[1]) }}</span>
                 <span class="tg-chat-meta">
@@ -1071,8 +1102,8 @@
             {% else %}
             <p class="px-3 py-2 text-body-secondary small mb-0">No users found.</p>
             {% endfor %}
-        </div>
-        {% endif %}
+                </div>
+                {% endif %}
         <div class="tg-chat-list" role="navigation" aria-label="Conversations">
             {% for item in conversations %}
             <div class="d-flex align-items-stretch">
@@ -1091,21 +1122,21 @@
                     </span>
                 </a>
                 <div class="d-flex align-items-center pe-2">{{ conversation_menu(item[0], item[2], item[1]) }}</div>
-            </div>
+                </div>
             {% else %}
             <p class="px-3 py-4 text-body-secondary small mb-0">No conversations yet. Search for a user to start chatting.</p>
-            {% endfor %}
-        </div>
-    </aside>
+                    {% endfor %}
+                    </div>
+            </aside>
 
     <section class="tg-main">
-        {% if not other_user %}
+            {% if not other_user %}
         <div class="tg-main-empty">
             <div class="tg-empty-card">
                 <p class="mb-0">Select a chat to start messaging</p>
             </div>
         </div>
-        {% elif conversation %}
+            {% elif conversation %}
         <header class="tg-header" id="chat-header">
             <a class="tg-icon-btn tg-back" href="{{ url_for('chat_page') }}" aria-label="Back to chats">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i>
@@ -1132,16 +1163,16 @@
         <div class="tg-messages-wrap">
             <div class="tg-search-panel" id="chat-search-panel" aria-live="polite"></div>
             <section id="messages" class="chat-messages" aria-live="polite">
-                {% for message in messages %}
+                    {% for message in messages %}
                 <div class="tg-msg {% if message[1] == user[0] %}own{% else %}other{% endif %}" data-message-id="{{ message[0] }}" data-sender-id="{{ message[1] }}" data-body="{{ (message[3] or '')|e }}" data-filename="{{ (message[5] or '')|e }}" data-mime="{{ (message[6] or '')|e }}" {% if message[9] %}data-edited="1"{% endif %}>
-                    <div class="chat-bubble {% if message[1] == user[0] %}own{% else %}other{% endif %}">
+                        <div class="chat-bubble {% if message[1] == user[0] %}own{% else %}other{% endif %}">
                         {% if message[3] %}<div class="chat-bubble-body" data-body="{{ message[3]|e }}"></div>{% endif %}
                         {% if message[5] %}<button type="button" class="btn btn-link p-0 file-preview-link chat-attachment" data-file-id="{{ message[4] }}" data-file-name="{{ message[5] }}" data-file-mime="{{ message[6] }}" data-file-url="{{ url_for('preview_shared_file', conversation_id=conversation[0], item_id=message[4]) }}" data-download-url="{{ url_for('download_shared_file', conversation_id=conversation[0], item_id=message[4]) }}"></button>{% endif %}
                         <div class="chat-bubble-meta">{% if message[9] %}<span class="chat-edited-label">edited</span>{% endif %}<time>{{ format_time(message[7]) }}</time>{% if message[1] == user[0] %}<i class="bi bi-check2-all" aria-hidden="true"></i>{% endif %}</div>
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
-            </section>
+                    {% endfor %}
+                </section>
             <button type="button" class="chat-jump-latest" id="jump-to-latest" title="Show last message" aria-label="Show last message">
                 <i class="bi bi-chevron-down" aria-hidden="true"></i>
             </button>
@@ -1168,10 +1199,10 @@
                     <i class="bi bi-mic-fill" aria-hidden="true"></i>
                 </button>
                 <input type="file" id="voice-file-input" accept="audio/*,.webm,.ogg,.mp3,.m4a,.wav,.aac" capture="user" hidden>
-            </form>
-        </div>
-        {% endif %}
-    </section>
+                </form>
+            </div>
+            {% endif %}
+            </section>
 
     {% if conversation %}
     <aside class="tg-media-panel" id="media-panel" aria-label="Emoji stickers and GIFs">
@@ -1308,13 +1339,13 @@
                 <option value="sunset">Sunset</option>
                 <option value="forest">Forest</option>
             </select>
-            <label class="form-label" for="bubble-style">Bubble shape</label>
+                <label class="form-label" for="bubble-style">Bubble shape</label>
             <select class="form-select mb-3" id="bubble-style">
                 <option value="rounded">Rounded</option>
                 <option value="soft">Soft</option>
                 <option value="square">Square</option>
             </select>
-            <label class="form-label" for="bubble-color">Your bubble color</label>
+                <label class="form-label" for="bubble-color">Your bubble color</label>
             <input class="form-control form-control-color mb-3" type="color" id="bubble-color" value="#effdde" title="Choose your bubble color">
             <label class="form-label" for="settings-text-size">Message text size</label>
             <select class="form-select mb-3" id="settings-text-size">
@@ -1335,7 +1366,7 @@
                 <div>
                     <div class="form-label">Send with Enter</div>
                     <p class="tg-settings-hint mb-0">Press Enter to send messages</p>
-                </div>
+        </div>
                 <div class="form-check form-switch m-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="settings-send-enter" checked>
                 </div>
@@ -1384,13 +1415,13 @@
     </div>
 </div>
 
-<div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalTitle" aria-hidden="true">
+        <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="h5 modal-title" id="fileModalTitle">File details</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        </div>
             <div class="modal-body" id="fileModalBody"></div>
             <div class="modal-footer">
                 <a class="btn btn-primary" id="fileDownload" href="#">Download file</a>
@@ -1448,26 +1479,26 @@
     <button type="button" data-ctx-action="delete" class="danger" role="menuitem"><i class="bi bi-trash" aria-hidden="true"></i> Delete</button>
 </div>
 
-<audio id="message-notification" preload="auto" src="{{ url_for('chat_notification_sound') }}"></audio>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+        <audio id="message-notification" preload="auto" src="{{ url_for('chat_notification_sound') }}"></audio>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='chat-media.js') }}"></script>
-{% if conversation %}
-<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-<script>
-    const socket = io();
-    const conversationId = Number(document.body.dataset.conversationId);
-    const currentUserId = Number(document.body.dataset.currentUserId);
-    const messages = document.getElementById('messages');
+        {% if conversation %}
+        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+            const conversationId = Number(document.body.dataset.conversationId);
+            const currentUserId = Number(document.body.dataset.currentUserId);
+            const messages = document.getElementById('messages');
     const jumpToLatestBtn = document.getElementById('jump-to-latest');
-    const input = document.getElementById('message-input');
+            const input = document.getElementById('message-input');
     const attachSelection = document.getElementById('attach-selection');
-    const fileModal = new bootstrap.Modal(document.getElementById('fileModal'));
+            const fileModal = new bootstrap.Modal(document.getElementById('fileModal'));
     const storageBrowserModal = new bootstrap.Modal(document.getElementById('storage-browser-modal'));
     const storageBrowserGrid = document.getElementById('storage-browser-grid');
     const storageBrowserCrumb = document.getElementById('storage-browser-crumb');
     const storageBrowserCount = document.getElementById('storage-browser-count');
     const storageBrowserAttach = document.getElementById('storage-browser-attach');
-    const notificationSound = document.getElementById('message-notification');
+            const notificationSound = document.getElementById('message-notification');
     const selectedAttachments = new Map();
     let browserFolderId = null;
     let browserPending = new Map();
@@ -1527,9 +1558,9 @@
         return `${mins}:${secs}`;
     }
 
-    function decorateAttachment(link) {
-        const mime = link.dataset.fileMime || '';
-        const name = link.dataset.fileName || 'Shared file';
+            function decorateAttachment(link) {
+                const mime = link.dataset.fileMime || '';
+                const name = link.dataset.fileName || 'Shared file';
         const extension = (name.includes('.') ? name.split('.').pop() : '').toLowerCase();
         const byExt = {
             py: 'bi-filetype-py', js: 'bi-filetype-js', jsx: 'bi-filetype-jsx', ts: 'bi-filetype-tsx', tsx: 'bi-filetype-tsx',
@@ -1540,7 +1571,7 @@
             ppt: 'bi-filetype-ppt', pptx: 'bi-filetype-pptx', sql: 'bi-filetype-sql', sh: 'bi-filetype-sh',
             java: 'bi-filetype-java', php: 'bi-filetype-php', rb: 'bi-filetype-rb', txt: 'bi-filetype-txt',
         };
-        link.replaceChildren();
+                link.replaceChildren();
         if (mime.startsWith('audio/')) {
             link.classList.add('chat-voice-link');
             const player = document.createElement('div');
@@ -1599,25 +1630,25 @@
             link.appendChild(player);
             return;
         }
-        if (mime.startsWith('image/')) {
-            const image = document.createElement('img');
-            image.className = 'chat-attachment-preview';
-            image.src = link.dataset.fileUrl;
-            image.alt = name;
+                if (mime.startsWith('image/')) {
+                    const image = document.createElement('img');
+                    image.className = 'chat-attachment-preview';
+                    image.src = link.dataset.fileUrl;
+                    image.alt = name;
             image.title = name;
-            link.appendChild(image);
-        } else {
-            const icon = document.createElement('i');
+                    link.appendChild(image);
+                } else {
+                    const icon = document.createElement('i');
             const fallback = mime.startsWith('video/') ? 'bi-file-earmark-play'
                 : mime === 'application/pdf' ? 'bi-file-earmark-pdf'
                 : mime.startsWith('text/') ? 'bi-file-earmark-text'
                 : 'bi-file-earmark';
             icon.className = 'bi chat-attachment-icon ' + (byExt[extension] || fallback);
-            icon.setAttribute('aria-hidden', 'true');
-            link.appendChild(icon);
-            const label = document.createElement('span');
-            label.textContent = name;
-            link.appendChild(label);
+                    icon.setAttribute('aria-hidden', 'true');
+                    link.appendChild(icon);
+                const label = document.createElement('span');
+                label.textContent = name;
+                link.appendChild(label);
         }
     }
 
@@ -1627,41 +1658,41 @@
                 event.preventDefault();
                 return;
             }
-            const name = link.dataset.fileName;
-            const extension = name.split('.').pop().toLowerCase();
-            const body = document.getElementById('fileModalBody');
-            document.getElementById('fileModalTitle').textContent = name;
-            document.getElementById('fileDownload').href = link.dataset.downloadUrl;
-            body.replaceChildren();
-            const details = document.createElement('p');
-            details.textContent = `File name: ${name} | Type: ${extension.toUpperCase()}`;
-            body.appendChild(details);
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-                const image = document.createElement('img');
-                image.className = 'img-fluid rounded';
-                image.src = link.dataset.fileUrl;
-                image.alt = name;
-                body.appendChild(image);
-            } else if (['mp4', 'webm', 'mov', 'mkv'].includes(extension)) {
-                const video = document.createElement('video');
-                video.className = 'w-100 rounded';
-                video.controls = true;
-                video.src = link.dataset.fileUrl;
-                body.appendChild(video);
-            } else if (extension === 'pdf') {
-                const pdf = document.createElement('iframe');
-                pdf.className = 'w-100';
-                pdf.style.height = '60vh';
-                pdf.src = link.dataset.fileUrl;
-                pdf.title = 'PDF preview';
-                body.appendChild(pdf);
-            } else {
-                const unavailable = document.createElement('p');
-                unavailable.className = 'text-body-secondary';
-                unavailable.textContent = 'Preview is not available for this file type.';
-                body.appendChild(unavailable);
-            }
-            fileModal.show();
+                const name = link.dataset.fileName;
+                const extension = name.split('.').pop().toLowerCase();
+                const body = document.getElementById('fileModalBody');
+                document.getElementById('fileModalTitle').textContent = name;
+                document.getElementById('fileDownload').href = link.dataset.downloadUrl;
+                body.replaceChildren();
+                const details = document.createElement('p');
+                details.textContent = `File name: ${name} | Type: ${extension.toUpperCase()}`;
+                body.appendChild(details);
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+                    const image = document.createElement('img');
+                    image.className = 'img-fluid rounded';
+                    image.src = link.dataset.fileUrl;
+                    image.alt = name;
+                    body.appendChild(image);
+                } else if (['mp4', 'webm', 'mov', 'mkv'].includes(extension)) {
+                    const video = document.createElement('video');
+                    video.className = 'w-100 rounded';
+                    video.controls = true;
+                    video.src = link.dataset.fileUrl;
+                    body.appendChild(video);
+                } else if (extension === 'pdf') {
+                    const pdf = document.createElement('iframe');
+                    pdf.className = 'w-100';
+                    pdf.style.height = '60vh';
+                    pdf.src = link.dataset.fileUrl;
+                    pdf.title = 'PDF preview';
+                    body.appendChild(pdf);
+                } else {
+                    const unavailable = document.createElement('p');
+                    unavailable.className = 'text-body-secondary';
+                    unavailable.textContent = 'Preview is not available for this file type.';
+                    body.appendChild(unavailable);
+                }
+                fileModal.show();
         });
     }
 
@@ -1702,6 +1733,8 @@
         updateComposerMode();
     }
 
+    const storageBrowserIndex = {{ storage_browser_index|tojson }};
+
     function updateBrowserCount() {
         const count = browserPending.size;
         storageBrowserCount.textContent = `${count} selected`;
@@ -1709,16 +1742,32 @@
         storageBrowserAttach.textContent = count > 1 ? `Attach ${count} files` : 'Attach selected';
     }
 
-    async function loadStorageBrowser(folderId = null) {
-        browserFolderId = folderId;
-        const query = folderId == null ? '' : `?folder_id=${folderId}`;
-        const response = await fetch(`/api/storage/browse${query}`);
-        const data = await response.json().catch(() => ({ folders: [], files: [] }));
-        if (!response.ok) {
-            storageBrowserGrid.innerHTML = '<p class="text-danger mb-0">Could not load storage.</p>';
-            return;
-        }
+    function sameFolderId(a, b) {
+        if (a == null && b == null) return true;
+        return Number(a) === Number(b);
+    }
 
+    function buildBrowserPayload(folderId = null) {
+        const folders = (storageBrowserIndex.folders || []).filter(folder => sameFolderId(folder.parent_id, folderId));
+        const files = (storageBrowserIndex.files || []).filter(file => sameFolderId(file.folder_id, folderId));
+        let folderName = 'Root';
+        let parentId = null;
+        if (folderId != null) {
+            const current = (storageBrowserIndex.folders || []).find(folder => Number(folder.id) === Number(folderId));
+            if (!current) return null;
+            folderName = current.name;
+            parentId = current.parent_id == null ? null : current.parent_id;
+        }
+        return {
+            folder_id: folderId == null ? null : Number(folderId),
+            folder_name: folderName,
+            parent_id: parentId,
+            folders: folders.map(folder => ({ id: folder.id, name: folder.name })),
+            files,
+        };
+    }
+
+    function renderStorageBrowser(data) {
         storageBrowserCrumb.replaceChildren();
         const rootLink = document.createElement('a');
         rootLink.href = '#';
@@ -1731,12 +1780,12 @@
         if (data.folder_id != null) {
             storageBrowserCrumb.append(document.createTextNode(' / '));
             const current = document.createElement('strong');
-            current.textContent = data.folder_name;
+            current.textContent = data.folder_name || 'Folder';
             storageBrowserCrumb.appendChild(current);
         }
 
         storageBrowserGrid.replaceChildren();
-        if (data.parent_id !== undefined && data.folder_id != null) {
+        if (data.folder_id != null) {
             const up = document.createElement('button');
             up.type = 'button';
             up.className = 'storage-browser-item';
@@ -1783,7 +1832,6 @@
             name.className = 'name';
             name.textContent = file.name;
             const meta = document.createElement('small');
-            meta.className = 'text-body-secondary';
             meta.textContent = formatBytes(file.size || 0);
             item.append(thumb, name, meta);
             item.addEventListener('click', () => {
@@ -1797,18 +1845,43 @@
 
         if (!(data.folders || []).length && !(data.files || []).length) {
             const empty = document.createElement('p');
-            empty.className = 'text-body-secondary mb-0';
-            empty.style.gridColumn = '1 / -1';
+            empty.className = 'storage-browser-status';
             empty.textContent = 'This folder is empty.';
             storageBrowserGrid.appendChild(empty);
         }
         updateBrowserCount();
     }
 
+    async function loadStorageBrowser(folderId = null) {
+        browserFolderId = folderId == null ? null : Number(folderId);
+        const localData = buildBrowserPayload(browserFolderId);
+        if (localData) {
+            renderStorageBrowser(localData);
+            return;
+        }
+
+        storageBrowserGrid.innerHTML = '<p class="storage-browser-status">Loading storage…</p>';
+        try {
+            const query = browserFolderId == null ? '' : `?folder_id=${browserFolderId}`;
+            const response = await fetch(`/api/storage/browse${query}`, {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data) {
+                storageBrowserGrid.innerHTML = '<p class="storage-browser-status text-danger">Could not load storage.</p>';
+                return;
+            }
+            renderStorageBrowser(data);
+        } catch (error) {
+            storageBrowserGrid.innerHTML = '<p class="storage-browser-status text-danger">Could not load storage.</p>';
+        }
+    }
+
     document.getElementById('open-storage-browser').addEventListener('click', () => {
         browserPending = new Map([...selectedAttachments]);
         updateBrowserCount();
-        loadStorageBrowser(browserFolderId);
+        loadStorageBrowser(null);
         storageBrowserModal.show();
     });
     document.getElementById('storage-browser-clear').addEventListener('click', () => {
@@ -1820,6 +1893,7 @@
         selectedAttachments.clear();
         for (const [id, file] of browserPending) selectedAttachments.set(id, file);
         renderAttachChips();
+        updateComposerMode();
         storageBrowserModal.hide();
     });
 
@@ -2579,7 +2653,7 @@
     scrollToLatest();
     requestAnimationFrame(() => scrollToLatest());
     window.addEventListener('load', () => scrollToLatest());
-</script>
+        </script>
 {% endif %}
 <script src="{{ url_for('static', filename='theme.js') }}"></script>
 <script>
