@@ -12,6 +12,7 @@ venv/
 .env
 .env.*
 !.env.example
+admin_keys.txt
 
 # Local database and runtime files
 *.db

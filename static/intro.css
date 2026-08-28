@@ -1,0 +1,407 @@
+.intro-body {
+    margin: 0;
+    background: #070c12;
+    color: #eaf6fb;
+    font-family: "Figtree", sans-serif;
+}
+
+.intro-body a {
+    color: inherit;
+}
+
+.intro-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 6vw;
+}
+
+.intro-wordmark {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-decoration: none;
+}
+
+.intro-wordmark img {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+}
+
+.intro-wordmark span {
+    font-family: "Oxanium", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.intro-header-link {
+    text-decoration: none;
+    color: #c5dce6;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.intro-header-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem 1.1rem;
+}
+
+.intro-header-static {
+    position: relative;
+    background: rgba(7, 12, 18, 0.92);
+    border-bottom: 1px solid rgba(46, 196, 238, 0.18);
+}
+
+.intro-hero {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    align-items: end;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(7, 12, 18, 0.12) 0%, rgba(7, 12, 18, 0.28) 38%, rgba(7, 12, 18, 0.9) 74%, #070c12 100%),
+        url("mezalion-logo.png") center 28% / cover no-repeat;
+}
+
+.intro-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 32%, rgba(46, 196, 238, 0.2), transparent 52%);
+    animation: intro-pulse 5.4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.intro-hero-copy {
+    position: relative;
+    z-index: 2;
+    padding: 0 6vw 5.5rem;
+    max-width: 38rem;
+    animation: intro-rise 1.1s ease both;
+}
+
+.intro-kicker {
+    margin: 0 0 0.45rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #9ec9d8;
+}
+
+.intro-brand {
+    margin: 0 0 0.85rem;
+    font-family: "Oxanium", sans-serif;
+    font-size: clamp(2.8rem, 8vw, 5.4rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 0.95;
+    text-transform: uppercase;
+}
+
+.intro-lead {
+    margin: 0 0 1.6rem;
+    max-width: 28rem;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: #c5dce6;
+}
+
+.intro-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.intro-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 9.5rem;
+    padding: 0.8rem 1.35rem;
+    background: #2ec4ee;
+    color: #061018;
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background-color 0.25s ease, transform 0.25s ease;
+}
+
+.intro-cta:hover {
+    background: #7fe3ff;
+    color: #061018;
+    transform: translateY(-1px);
+}
+
+.intro-cta-quiet {
+    background: transparent;
+    color: #eaf6fb;
+    box-shadow: inset 0 0 0 1px rgba(46, 196, 238, 0.55);
+}
+
+.intro-cta-quiet:hover {
+    background: rgba(46, 196, 238, 0.12);
+    color: #eaf6fb;
+}
+
+.intro-section {
+    padding: 4.5rem 6vw;
+}
+
+.intro-section h2 {
+    margin: 0 0 0.5rem;
+    font-family: "Oxanium", sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    letter-spacing: 0.04em;
+}
+
+.intro-section > p {
+    margin: 0 0 2.4rem;
+    max-width: 34rem;
+    color: #9bb4c2;
+}
+
+.intro-features {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.5rem 3rem;
+}
+
+.intro-features article {
+    padding-top: 1rem;
+    border-top: 2px solid #2ec4ee;
+}
+
+.intro-features h3 {
+    margin: 0 0 0.4rem;
+    font-family: "Oxanium", sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.intro-features p {
+    margin: 0;
+    color: #c5dce6;
+    line-height: 1.55;
+}
+
+.intro-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 52vh;
+}
+
+.intro-split section {
+    padding: 4.5rem 6vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.intro-split section:first-child {
+    background: #0b131c;
+}
+
+.intro-split section:last-child {
+    background: #101a24;
+}
+
+.intro-split h2 {
+    margin: 0 0 1.2rem;
+}
+
+.intro-split ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.intro-split li {
+    margin: 0 0 0.7rem;
+    color: #c5dce6;
+    font-size: 1.05rem;
+}
+
+.intro-foot {
+    padding: 1.4rem 6vw 2.2rem;
+    color: #7f97a4;
+    font-size: 0.85rem;
+}
+
+@keyframes intro-pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+}
+
+@keyframes intro-rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-shell,
+.faq-shell {
+    min-height: calc(100vh - 5.5rem);
+    min-height: calc(100dvh - 5.5rem);
+    padding: 2rem 1.25rem 3rem;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(46, 196, 238, 0.16), transparent 48%),
+        #070c12;
+}
+
+.auth-shell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-card {
+    width: min(100%, 26rem);
+    padding: 1.5rem 1.25rem;
+    background: #0b131c;
+    border: 1px solid rgba(46, 196, 238, 0.22);
+}
+
+.auth-card h1 {
+    margin: 0 0 0.35rem;
+    font-family: "Oxanium", sans-serif;
+    font-size: 1.55rem;
+    letter-spacing: 0.06em;
+}
+
+.auth-card .auth-lead {
+    margin: 0 0 1.25rem;
+    color: #9bb4c2;
+}
+
+.auth-card .form-label,
+.auth-card .form-check-label {
+    color: #c5dce6;
+}
+
+.auth-card .form-control {
+    background: #101a24;
+    border-color: #2a4250;
+    color: #eaf6fb;
+}
+
+.auth-card .form-control:focus {
+    background: #101a24;
+    color: #eaf6fb;
+    border-color: #2ec4ee;
+    box-shadow: 0 0 0 0.2rem rgba(46, 196, 238, 0.18);
+}
+
+.auth-card .form-check-input {
+    background-color: #101a24;
+    border-color: #2a4250;
+}
+
+.auth-card .form-check-input:checked {
+    background-color: #2ec4ee;
+    border-color: #2ec4ee;
+}
+
+.auth-card .intro-cta {
+    width: 100%;
+    border: 0;
+    cursor: pointer;
+}
+
+.auth-switch {
+    margin: 1rem 0 0;
+    text-align: center;
+    color: #9bb4c2;
+}
+
+.auth-switch a {
+    color: #2ec4ee;
+    text-decoration: none;
+}
+
+.faq-shell {
+    max-width: 48rem;
+    margin: 0 auto;
+}
+
+.faq-shell h1 {
+    margin: 0 0 0.4rem;
+    font-family: "Oxanium", sans-serif;
+    letter-spacing: 0.06em;
+}
+
+.faq-shell > p {
+    margin: 0 0 1.5rem;
+    color: #9bb4c2;
+}
+
+.faq-shell .accordion-item {
+    background: #0b131c;
+    border-color: rgba(46, 196, 238, 0.22);
+    color: #eaf6fb;
+}
+
+.faq-shell .accordion-button {
+    background: #0b131c;
+    color: #eaf6fb;
+    font-family: "Oxanium", sans-serif;
+    box-shadow: none;
+}
+
+.faq-shell .accordion-button:not(.collapsed) {
+    background: #101a24;
+    color: #7fe3ff;
+    box-shadow: none;
+}
+
+.faq-shell .accordion-button::after {
+    filter: invert(1) brightness(1.6);
+}
+
+.faq-shell .accordion-body {
+    background: #101a24;
+    color: #c5dce6;
+}
+
+@media (max-width: 800px) {
+    .intro-features,
+    .intro-split {
+        grid-template-columns: 1fr;
+    }
+
+    .intro-hero-copy {
+        padding-bottom: 3.5rem;
+    }
+
+    .intro-header,
+    .intro-header-static {
+        padding: 0.9rem 1rem;
+        gap: 0.75rem;
+    }
+
+    .intro-wordmark span {
+        font-size: 0.9rem;
+        letter-spacing: 0.12em;
+    }
+
+    .intro-cta {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .intro-actions {
+        flex-direction: column;
+    }
+}

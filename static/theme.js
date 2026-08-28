@@ -1,6 +1,14 @@
 (function () {
     const themeKey = 'mezali-dark-theme';
-    const isDark = localStorage.getItem(themeKey) === 'true';
+
+    function readDarkPreference() {
+        const stored = localStorage.getItem(themeKey);
+        if (stored === null) {
+            localStorage.setItem(themeKey, 'true');
+            return true;
+        }
+        return stored === 'true';
+    }
 
     function applyTheme(enabled) {
         document.documentElement.setAttribute('data-bs-theme', enabled ? 'dark' : 'light');
@@ -10,15 +18,25 @@
         });
     }
 
-    window.applyMezaliTheme = applyTheme;
-    applyTheme(isDark);
-    document.addEventListener('DOMContentLoaded', () => {
-        applyTheme(localStorage.getItem(themeKey) === 'true');
+    function bindToggles() {
         document.querySelectorAll('[data-dark-theme-toggle]').forEach(toggle => {
+            if (toggle.dataset.themeBound === '1') return;
+            toggle.dataset.themeBound = '1';
             toggle.addEventListener('change', () => {
                 localStorage.setItem(themeKey, toggle.checked ? 'true' : 'false');
                 applyTheme(toggle.checked);
             });
         });
-    });
+    }
+
+    window.applyMezalionsTheme = applyTheme;
+    applyTheme(readDarkPreference());
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(readDarkPreference());
+            bindToggles();
+        });
+    } else {
+        bindToggles();
+    }
 })();

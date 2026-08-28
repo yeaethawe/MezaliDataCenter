@@ -1,35 +1,22 @@
 {% extends "index.html" %}
 
-{% block title %}Login User{% endblock %}
+{% block title %}Sign In · Mezalion{% endblock %}
 
-{% block nav %}
-
-<ul class="nav nav-pills">
-    <li class="nav-item"><a href="/" class="nav-link active" aria-current="page">Home</a></li>
-    <li class="nav-item"><a href="/users" class="nav-link">Users</a></li> 
-    <li class="nav-item"><a href="/products" class="nav-link">products</a></li> 
-    <li class="nav-item"><a href="/faqs" class="nav-link">FAQs</a></li> 
-</ul> 
-
-{% endblock %}
-
-{% block content %} 
-
-<div class="container w-50 m-auto shadow rounded w-50 d-flex flex-wrap justify-content-center p-3">
-    <form action="/login" method="POST">
-        <h1 class="h3 mb-3 fw-normal">Login User</h1>
-        <label class="form-label" for="email">email:</label>
-        <input class="form-control" type="text" id="email" name="email" required>
-        <br>
-        <label class="form-label" for="password">password:</label>
-        <input class="form-control" type="password" id="password" name="password" required>
-        <br>
+{% block content %}
+<div class="auth-shell">
+    <form class="auth-card" action="{{ url_for('login_user_page') }}" method="POST">
+        <h1>Sign In</h1>
+        <p class="auth-lead">Access your Mezalion workspace.</p>
+        <label class="form-label" for="email">Email</label>
+        <input class="form-control mb-3" type="email" id="email" name="email" autocomplete="email" required>
+        <label class="form-label" for="password">Password</label>
+        <input class="form-control mb-3" type="password" id="password" name="password" autocomplete="current-password" required>
         <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me">
             <label class="form-check-label" for="remember_me">Remember me</label>
         </div>
-        <button class="btn btn-primary w-50 py-2" type="submit">login</button>
+        <button class="intro-cta" type="submit">Sign In</button>
+        <p class="auth-switch">Need an account? <a href="{{ url_for('register_user_page') }}">Get Started</a></p>
     </form>
 </div>
 {% endblock %}
-    

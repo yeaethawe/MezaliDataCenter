@@ -7,270 +7,2765 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
     <style>
-        :root { --chat-bg: #f8f9fa; --bubble-own: #0d6efd; --bubble-other: #e9ecef; --bubble-radius: 16px; }
-        body { background: var(--chat-bg) !important; }
-        .chat-messages { height: 360px; overflow-y: auto; }
-        .chat-bubble { border-radius: var(--bubble-radius); max-width: 78%; padding: .55rem .8rem; }
-        .chat-bubble.own { background: var(--bubble-own); color: #fff; margin-left: auto; }
-        .chat-bubble.other { background: var(--bubble-other); color: #212529; }
-        .chat-sender { display: block; font-size: .72rem; line-height: 1; margin: -.55rem -.8rem .5rem; padding: .35rem .55rem; background: rgba(0, 0, 0, .12); }
-        .chat-avatar { width: 28px; height: 28px; object-fit: cover; vertical-align: middle; }
-        .chat-bubble.other .chat-sender { border-radius: 0 var(--bubble-radius) 0 0; }
-        .chat-bubble.own .chat-sender { border-radius: var(--bubble-radius) 0 0 0; }
-        .chat-bubble.own .chat-sender { text-align: right; }
-        .chat-attachment { display: inline-flex; flex-direction: column; align-items: flex-start; gap: .25rem; }
+        :root {
+            --tg-sidebar: #ffffff;
+            --tg-sidebar-border: #dfe3e6;
+            --tg-sidebar-hover: #f4f4f5;
+            --tg-sidebar-active: #3390ec;
+            --tg-header: #ffffff;
+            --tg-composer: #ffffff;
+            --tg-chat-bg: #8caabf;
+            --tg-chat-pattern: rgba(255, 255, 255, 0.08);
+            --bubble-own: #effdde;
+            --bubble-own-text: #000000;
+            --bubble-other: #ffffff;
+            --bubble-other-text: #000000;
+            --bubble-meta: rgba(0, 0, 0, 0.45);
+            --bubble-radius: 12px;
+            --tg-muted: #707579;
+            --tg-text: #0a0a0a;
+            --tg-input-bg: #f4f4f5;
+            --tg-send: #3390ec;
+        }
+        html[data-bs-theme="dark"] {
+            --tg-sidebar: #17212b;
+            --tg-sidebar-border: #0e1621;
+            --tg-sidebar-hover: #202b36;
+            --tg-sidebar-active: #2b5278;
+            --tg-header: #17212b;
+            --tg-composer: #17212b;
+            --tg-chat-bg: #0e1621;
+            --tg-chat-pattern: rgba(255, 255, 255, 0.03);
+            --bubble-own: #2b5278;
+            --bubble-own-text: #ffffff;
+            --bubble-other: #182533;
+            --bubble-other-text: #ffffff;
+            --bubble-meta: rgba(255, 255, 255, 0.55);
+            --tg-muted: #7d8b99;
+            --tg-text: #f5f5f5;
+            --tg-input-bg: #242f3d;
+            --tg-send: #5288c1;
+        }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: var(--tg-sidebar) !important;
+            color: var(--tg-text);
+            overflow: hidden;
+        }
+        .tg-app {
+            display: grid;
+            grid-template-columns: minmax(280px, 360px) 1fr;
+            height: 100vh;
+            height: 100dvh;
+        }
+        .tg-app.media-open {
+            grid-template-columns: minmax(280px, 360px) 1fr minmax(280px, 400px);
+        }
+        .tg-sidebar {
+            display: flex;
+            flex-direction: column;
+            background: var(--tg-sidebar);
+            border-right: 1px solid var(--tg-sidebar-border);
+            min-height: 0;
+        }
+        .tg-sidebar-top {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-brand {
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--tg-text);
+            white-space: nowrap;
+        }
+        .tg-search {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--tg-input-bg);
+            border-radius: 22px;
+            padding: 0.35rem 0.75rem;
+        }
+        .tg-search input {
+            border: 0;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            color: var(--tg-text);
+            font-size: 0.9rem;
+        }
+        .tg-search i { color: var(--tg-muted); }
+        .tg-sidebar-actions { display: flex; gap: 0.25rem; }
+        .tg-icon-btn {
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--tg-muted);
+            display: inline-grid;
+            place-items: center;
+            text-decoration: none;
+        }
+        .tg-icon-btn:hover { background: var(--tg-sidebar-hover); color: var(--tg-text); }
+        .tg-chat-list {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        .tg-chat-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            padding: 0.65rem 0.85rem;
+            text-decoration: none;
+            color: inherit;
+            border: 0;
+            width: 100%;
+            background: transparent;
+            text-align: left;
+        }
+        .tg-chat-row:hover { background: var(--tg-sidebar-hover); }
+        .tg-chat-row.active {
+            background: var(--tg-sidebar-active);
+            color: #fff;
+        }
+        .tg-chat-row.active .tg-chat-preview,
+        .tg-chat-row.active .tg-chat-time { color: rgba(255, 255, 255, 0.8); }
+        .tg-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #6ab2f2, #3390ec);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .tg-avatar.sm { width: 40px; height: 40px; font-size: 0.95rem; }
+        .tg-chat-meta { min-width: 0; flex: 1; }
+        .tg-chat-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            align-items: baseline;
+        }
+        .tg-chat-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tg-chat-time { font-size: 0.72rem; color: var(--tg-muted); flex-shrink: 0; }
+        .tg-chat-preview {
+            font-size: 0.82rem;
+            color: var(--tg-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 0.1rem;
+        }
+        .tg-search-results {
+            border-bottom: 1px solid var(--tg-sidebar-border);
+            max-height: 220px;
+            overflow: auto;
+        }
+        .tg-search-results h2 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--tg-muted);
+            margin: 0.6rem 0.85rem 0.25rem;
+        }
+        .tg-main {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            background: var(--tg-chat-bg);
+        }
+        .tg-main-empty {
+            flex: 1;
+            display: grid;
+            place-items: center;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            padding: 2rem;
+            background:
+                radial-gradient(circle at 20% 20%, var(--tg-chat-pattern) 0 2px, transparent 2px) 0 0 / 28px 28px,
+                radial-gradient(circle at 70% 60%, var(--tg-chat-pattern) 0 1.5px, transparent 1.5px) 0 0 / 36px 36px,
+                var(--tg-chat-bg);
+        }
+        .tg-empty-card {
+            background: rgba(0, 0, 0, 0.28);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            max-width: 320px;
+        }
+        .tg-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 0.85rem;
+            background: var(--tg-header);
+            border-bottom: 1px solid var(--tg-sidebar-border);
+            min-height: 56px;
+        }
+        .tg-header-info { min-width: 0; flex: 1; }
+        .tg-header-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tg-header-sub {
+            font-size: 0.78rem;
+            color: var(--tg-muted);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tg-messages-wrap {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.1rem 0.75rem;
+            background:
+                radial-gradient(circle at 18% 22%, var(--tg-chat-pattern) 0 2px, transparent 2px) 0 0 / 28px 28px,
+                radial-gradient(circle at 72% 58%, var(--tg-chat-pattern) 0 1.5px, transparent 1.5px) 0 0 / 40px 40px,
+                var(--tg-chat-bg);
+        }
+        .chat-jump-latest {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 2;
+            display: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 0;
+            background: var(--tg-header);
+            color: var(--tg-text);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-jump-latest.is-visible { display: inline-flex; }
+        .tg-msg {
+            display: flex;
+            margin-bottom: 0.35rem;
+        }
+        .tg-msg.own { justify-content: flex-end; }
+        .tg-msg.other { justify-content: flex-start; }
+        .chat-bubble {
+            position: relative;
+            max-width: min(78%, 460px);
+            padding: 0.45rem 0.65rem 0.35rem;
+            border-radius: var(--bubble-radius);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+            word-wrap: break-word;
+        }
+        .chat-bubble.own {
+            background: var(--bubble-own);
+            color: var(--bubble-own-text);
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble.other {
+            background: var(--bubble-other);
+            color: var(--bubble-other-text);
+            border-bottom-left-radius: 4px;
+        }
+        .chat-bubble-text { white-space: pre-wrap; line-height: 1.35; font-size: 0.95rem; }
+        .chat-bubble-body.is-media,
+        .chat-bubble-body.is-sticker { margin: 0; }
+        .chat-gif {
+            display: block;
+            max-width: min(260px, 70vw);
+            max-height: 260px;
+            border-radius: 10px;
+        }
+        .chat-sticker {
+            font-size: 4.5rem;
+            line-height: 1;
+            padding: 0.15rem 0.25rem;
+        }
+        .chat-bubble.is-sticker-bubble,
+        .chat-bubble.is-gif-bubble {
+            background: transparent !important;
+            box-shadow: none;
+            padding: 0.15rem;
+        }
+        .chat-bubble.is-sticker-bubble .chat-bubble-meta,
+        .chat-bubble.is-gif-bubble .chat-bubble-meta {
+            background: rgba(0, 0, 0, 0.35);
+            color: #fff;
+            border-radius: 999px;
+            padding: 0.15rem 0.4rem;
+            position: absolute;
+            right: 0.35rem;
+            bottom: 0.35rem;
+        }
+        .tg-msg.search-hit .chat-bubble {
+            outline: 2px solid var(--tg-send);
+            outline-offset: 2px;
+        }
+        .tg-chat-search {
+            display: none;
+            align-items: center;
+            gap: 0.4rem;
+            width: 100%;
+        }
+        .tg-header.searching .tg-header-info,
+        .tg-header.searching .conversation-menu,
+        .tg-header.searching .tg-avatar,
+        .tg-header.searching #chat-search-open { display: none; }
+        .tg-header.searching .tg-chat-search { display: flex; }
+        .tg-chat-search input {
+            flex: 1;
+            border: 0;
+            background: var(--tg-input-bg);
+            border-radius: 18px;
+            padding: 0.45rem 0.8rem;
+            color: var(--tg-text);
+            outline: none;
+        }
+        .tg-search-panel {
+            display: none;
+            position: absolute;
+            left: 0.75rem;
+            right: 0.75rem;
+            top: 0.75rem;
+            z-index: 4;
+            max-height: 45%;
+            overflow: auto;
+            background: var(--tg-header);
+            border: 1px solid var(--tg-sidebar-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        }
+        .tg-search-panel.is-open { display: block; }
+        .tg-search-hit {
+            display: block;
+            width: 100%;
+            border: 0;
+            background: transparent;
+            text-align: left;
+            padding: 0.65rem 0.8rem;
+            color: var(--tg-text);
+            border-bottom: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-search-hit:hover { background: var(--tg-sidebar-hover); }
+        .tg-search-hit strong { display: block; font-size: 0.82rem; }
+        .tg-search-hit span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--tg-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tg-media-panel {
+            display: none;
+            flex-direction: column;
+            min-height: 0;
+            background: var(--tg-sidebar);
+            border-left: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-app.media-open .tg-media-panel { display: flex; }
+        .tg-media-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border-bottom: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-media-tabs button {
+            border: 0;
+            background: transparent;
+            padding: 0.85rem 0.5rem;
+            color: var(--tg-muted);
+            font-weight: 600;
+            position: relative;
+        }
+        .tg-media-tabs button.active {
+            color: var(--tg-send);
+        }
+        .tg-media-tabs button.active::after {
+            content: "";
+            position: absolute;
+            left: 18%;
+            right: 18%;
+            bottom: 0;
+            height: 2px;
+            background: var(--tg-send);
+            border-radius: 2px;
+        }
+        .tg-media-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-media-search {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--tg-input-bg);
+            border-radius: 18px;
+            padding: 0.4rem 0.7rem;
+        }
+        .tg-media-search input {
+            border: 0;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            color: var(--tg-text);
+            font-size: 0.9rem;
+        }
+        .tg-quick-reactions {
+            display: flex;
+            gap: 0.15rem;
+        }
+        .tg-quick-reactions button {
+            border: 0;
+            background: transparent;
+            font-size: 1.05rem;
+            line-height: 1;
+            padding: 0.15rem;
+        }
+        .tg-media-body {
+            flex: 1;
+            overflow: auto;
+            min-height: 0;
+            padding: 0.5rem 0.65rem 0.75rem;
+        }
+        .tg-emoji-section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--tg-muted);
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin: 0.55rem 0.15rem 0.35rem;
+        }
+        .tg-emoji-grid,
+        .tg-sticker-grid,
+        .tg-gif-grid {
+            display: grid;
+            gap: 0.2rem;
+        }
+        .tg-emoji-grid {
+            grid-template-columns: repeat(8, 1fr);
+        }
+        .tg-sticker-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.35rem;
+        }
+        .tg-gif-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem;
+        }
+        .tg-emoji-grid button,
+        .tg-sticker-grid button {
+            border: 0;
+            background: transparent;
+            border-radius: 8px;
+            aspect-ratio: 1;
+            font-size: 1.45rem;
+            line-height: 1;
+        }
+        .tg-emoji-grid button:hover,
+        .tg-sticker-grid button:hover {
+            background: var(--tg-sidebar-hover);
+        }
+        .tg-sticker-grid button { font-size: 2.4rem; }
+        .tg-gif-grid button {
+            border: 0;
+            padding: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--tg-input-bg);
+            aspect-ratio: 1;
+        }
+        .tg-gif-grid img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .tg-media-cats {
+            display: flex;
+            gap: 0.15rem;
+            padding: 0.4rem 0.5rem;
+            border-top: 1px solid var(--tg-sidebar-border);
+            overflow-x: auto;
+        }
+        .tg-media-cats button {
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--tg-muted);
+            flex-shrink: 0;
+        }
+        .tg-media-cats button.active,
+        .tg-media-cats button:hover {
+            color: var(--tg-send);
+            background: var(--tg-sidebar-hover);
+        }
+        .tg-emoji-btn.active { color: var(--tg-send); }
+        .chat-bubble-meta {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.15rem;
+            font-size: 0.68rem;
+            color: var(--bubble-meta);
+            line-height: 1;
+        }
+        .chat-bubble.own .chat-bubble-meta { color: var(--bubble-meta); }
+        .chat-attachment {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.2rem;
+            text-decoration: none;
+            color: inherit;
+            max-width: 100%;
+        }
         .chat-attachment-icon { font-size: 1.35rem; }
-        .chat-attachment-preview { width: 200px; max-width: 100%; height: auto; border-radius: 8px; }
-        .theme-ocean { --chat-bg: #e8f4f8; --bubble-own: #087f8c; --bubble-other: #d4eef0; }
-        .theme-sunset { --chat-bg: #fff4e6; --bubble-own: #d9480f; --bubble-other: #ffe8cc; }
-        .theme-forest { --chat-bg: #edf7ed; --bubble-own: #2b8a3e; --bubble-other: #d8f5d0; }
+        .chat-attachment-preview {
+            width: 220px;
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+        .tg-composer-wrap {
+            background: var(--tg-composer);
+            border-top: 1px solid var(--tg-sidebar-border);
+            padding: 0.55rem 0.75rem 0.7rem;
+        }
+        #attach-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.45rem;
+        }
+        #attach-selection:empty { display: none; margin: 0; }
+        .attach-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+            background: var(--tg-input-bg);
+            color: var(--tg-text);
+            font-size: 0.8rem;
+            max-width: 100%;
+        }
+        .attach-chip-thumb {
+            width: 22px;
+            height: 22px;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .attach-chip button {
+            border: 0;
+            background: transparent;
+            line-height: 1;
+            padding: 0;
+            color: var(--tg-muted);
+        }
+        .tg-composer {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.4rem;
+        }
+        .tg-composer textarea,
+        .tg-composer #message-input {
+            flex: 1;
+            border: 0;
+            background: var(--tg-input-bg);
+            border-radius: 22px;
+            padding: 0.65rem 1rem;
+            resize: none;
+            outline: none;
+            color: var(--tg-text);
+            font-size: 0.95rem;
+            min-height: 44px;
+            max-height: 120px;
+        }
+        .tg-send-btn,
+        .tg-attach-btn,
+        .tg-voice-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 0;
+            display: inline-grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .tg-attach-btn {
+            background: transparent;
+            color: var(--tg-muted);
+        }
+        .tg-attach-btn:hover { color: var(--tg-send); }
+        .tg-send-btn {
+            background: var(--tg-send);
+            color: #fff;
+        }
+        .tg-send-btn:hover { filter: brightness(1.08); }
+        .tg-voice-btn {
+            background: var(--tg-send);
+            color: #fff;
+        }
+        .tg-voice-btn:hover { filter: brightness(1.08); }
+        .tg-voice-btn.is-recording {
+            background: #e53935;
+            animation: tg-pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes tg-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+        .tg-recording-bar {
+            display: none;
+            align-items: center;
+            gap: 0.65rem;
+            width: 100%;
+            background: var(--tg-input-bg);
+            border-radius: 22px;
+            padding: 0.45rem 0.75rem;
+            min-height: 44px;
+        }
+        .tg-composer.is-recording #message-input,
+        .tg-composer.is-recording .tg-emoji-btn,
+        .tg-composer.is-recording #open-storage-browser,
+        .tg-composer.is-recording .tg-send-btn { display: none; }
+        .tg-composer.is-recording .tg-recording-bar { display: flex; }
+        .tg-recording-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e53935;
+            animation: tg-pulse 1s ease-in-out infinite;
+        }
+        .tg-recording-time {
+            font-variant-numeric: tabular-nums;
+            font-size: 0.95rem;
+            min-width: 3rem;
+        }
+        .tg-recording-cancel {
+            border: 0;
+            background: transparent;
+            color: #e53935;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        .chat-voice-player {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            min-width: min(220px, 70vw);
+            max-width: 280px;
+            padding: 0.15rem 0;
+        }
+        .chat-voice-link {
+            text-decoration: none !important;
+            color: inherit !important;
+            display: block;
+            cursor: default;
+        }
+        .chat-voice-play {
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 50%;
+            background: var(--tg-send);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .chat-bubble.other .chat-voice-play { background: #3390ec; }
+        .chat-voice-wave {
+            position: relative;
+            flex: 1;
+            height: 28px;
+            border-radius: 4px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    currentColor 0 2px,
+                    transparent 2px 5px
+                );
+            opacity: 0.35;
+            overflow: hidden;
+        }
+        .chat-voice-progress {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 0%;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    currentColor 0 2px,
+                    transparent 2px 5px
+                );
+            opacity: 1;
+        }
+        .chat-voice-time {
+            font-size: 0.72rem;
+            opacity: 0.75;
+            min-width: 2.4rem;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .chat-edited-label {
+            font-size: 0.65rem;
+            opacity: 0.7;
+            margin-right: 0.2rem;
+        }
+        .tg-ctx-menu {
+            position: fixed;
+            z-index: 40;
+            min-width: 160px;
+            padding: 0.35rem;
+            border-radius: 12px;
+            background: var(--tg-header);
+            border: 1px solid var(--tg-sidebar-border);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+            display: none;
+        }
+        .tg-ctx-menu.is-open { display: block; }
+        .tg-ctx-menu button {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: var(--tg-text);
+            text-align: left;
+            padding: 0.55rem 0.7rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .tg-ctx-menu button:hover { background: var(--tg-sidebar-hover); }
+        .tg-ctx-menu button.danger { color: #e53935; }
+        .tg-ctx-menu button:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .tg-edit-modal .modal-content {
+            background: var(--tg-header);
+            color: var(--tg-text);
+            border-color: var(--tg-sidebar-border);
+        }
+        .tg-edit-modal textarea {
+            background: var(--tg-input-bg);
+            color: var(--tg-text);
+            border-color: var(--tg-sidebar-border);
+            min-height: 110px;
+        }
+        .storage-browser-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.6rem;
+            max-height: 360px;
+            overflow: auto;
+        }
+        .storage-browser-item {
+            border: 1px solid var(--bs-border-color, #dee2e6);
+            border-radius: 0.5rem;
+            padding: 0.55rem;
+            text-align: center;
+            cursor: pointer;
+            background: #fff;
+            color: #212529;
+            user-select: none;
+        }
+        .storage-browser-item:hover { border-color: #3390ec; }
+        .storage-browser-item.selected { border-color: #3390ec; background: #e7f1ff; box-shadow: inset 0 0 0 1px #3390ec; }
+        .storage-browser-item .thumb {
+            height: 64px;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            margin-bottom: 0.35rem;
+            border-radius: 0.35rem;
+            background: #f8f9fa;
+        }
+        .storage-browser-item .thumb img,
+        .storage-browser-item .thumb video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .storage-browser-item .thumb i { font-size: 1.6rem; }
+        .storage-browser-item .name {
+            font-size: 0.75rem;
+            word-break: break-word;
+            line-height: 1.2;
+            max-height: 2.4em;
+            overflow: hidden;
+            color: #212529;
+        }
+        .storage-browser-item small { color: #6c757d; }
+        html[data-bs-theme="dark"] .storage-browser-item {
+            background: #101a24;
+            border-color: #2a4250;
+            color: #eaf6fb;
+        }
+        html[data-bs-theme="dark"] .storage-browser-item .thumb { background: #0b131c; }
+        html[data-bs-theme="dark"] .storage-browser-item .name { color: #eaf6fb; }
+        html[data-bs-theme="dark"] .storage-browser-item small { color: #9bb4c2; }
+        html[data-bs-theme="dark"] .storage-browser-item.selected {
+            background: #143044;
+            border-color: #2ec4ee;
+            box-shadow: inset 0 0 0 1px #2ec4ee;
+        }
+        .storage-browser-crumb a { text-decoration: none; }
+        .theme-ocean { --bubble-own: #d4f3f7; --tg-send: #087f8c; --tg-sidebar-active: #087f8c; }
+        .theme-sunset { --bubble-own: #ffe8cc; --tg-send: #d9480f; --tg-sidebar-active: #d9480f; }
+        .theme-forest { --bubble-own: #d8f5d0; --tg-send: #2b8a3e; --tg-sidebar-active: #2b8a3e; }
+        html[data-bs-theme="dark"] .theme-ocean { --bubble-own: #164e56; }
+        html[data-bs-theme="dark"] .theme-sunset { --bubble-own: #5c2a12; }
+        html[data-bs-theme="dark"] .theme-forest { --bubble-own: #1e4d28; }
+        .conversation-menu .btn { line-height: 1; padding: .15rem .35rem; color: var(--tg-muted); }
+        .tg-settings-offcanvas {
+            --bs-offcanvas-width: min(100vw, 380px);
+            background: var(--tg-sidebar);
+            color: var(--tg-text);
+        }
+        .tg-settings-offcanvas .offcanvas-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-settings-offcanvas .offcanvas-header .h5 { flex: 1; margin: 0; }
+        .tg-settings-offcanvas .btn-close { filter: none; }
+        .tg-settings-panels { position: relative; min-height: 100%; }
+        .tg-settings-panel { display: none; }
+        .tg-settings-panel.is-active { display: block; }
+        .tg-settings-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.35rem 0.15rem 1rem;
+            border-bottom: 1px solid var(--tg-sidebar-border);
+            margin-bottom: 0.5rem;
+            text-decoration: none;
+            color: inherit;
+        }
+        .tg-settings-profile:hover { color: inherit; }
+        .tg-settings-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: linear-gradient(135deg, #6ab2f2, #3390ec);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .tg-settings-name { font-weight: 700; font-size: 1.05rem; margin: 0; }
+        .tg-settings-sub { color: var(--tg-muted); font-size: 0.82rem; margin: 0.15rem 0 0; }
+        .tg-settings-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .tg-settings-list button,
+        .tg-settings-list a {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: var(--tg-text);
+            text-align: left;
+            text-decoration: none;
+            padding: 0.75rem 0.35rem;
+            border-radius: 10px;
+        }
+        .tg-settings-list button:hover,
+        .tg-settings-list a:hover {
+            background: var(--tg-sidebar-hover);
+            color: var(--tg-text);
+        }
+        .tg-settings-ico {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .tg-settings-ico.blue { background: #3390ec; }
+        .tg-settings-ico.red { background: #e53935; }
+        .tg-settings-ico.green { background: #43a047; }
+        .tg-settings-ico.orange { background: #fb8c00; }
+        .tg-settings-ico.purple { background: #8e24aa; }
+        .tg-settings-ico.teal { background: #00897b; }
+        .tg-settings-ico.gray { background: #607d8b; }
+        .tg-settings-label { flex: 1; font-size: 0.95rem; }
+        .tg-settings-meta { color: var(--tg-muted); font-size: 0.8rem; }
+        .tg-settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid var(--tg-sidebar-border);
+        }
+        .tg-settings-row:last-child { border-bottom: 0; }
+        .tg-settings-row .form-label { margin: 0; }
+        .tg-settings-hint {
+            color: var(--tg-muted);
+            font-size: 0.78rem;
+            margin: 0.15rem 0 0;
+        }
+        .tg-wallpaper-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.45rem;
+            margin-top: 0.35rem;
+        }
+        .tg-wallpaper-opt {
+            border: 2px solid transparent;
+            border-radius: 10px;
+            height: 54px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .tg-wallpaper-opt.is-active { border-color: var(--tg-send); }
+        .tg-wallpaper-opt[data-wallpaper="default"] { background: #8caabf; }
+        .tg-wallpaper-opt[data-wallpaper="night"] { background: #0e1621; }
+        .tg-wallpaper-opt[data-wallpaper="graphite"] { background: #2b343b; }
+        .tg-wallpaper-opt[data-wallpaper="mint"] { background: #6f9e8f; }
+        .tg-wallpaper-opt[data-wallpaper="sand"] { background: #c2a878; }
+        .tg-wallpaper-opt[data-wallpaper="rose"] { background: #b07a8a; }
+        body.wallpaper-night { --tg-chat-bg: #0e1621; }
+        body.wallpaper-graphite { --tg-chat-bg: #2b343b; }
+        body.wallpaper-mint { --tg-chat-bg: #6f9e8f; }
+        body.wallpaper-sand { --tg-chat-bg: #c2a878; }
+        body.wallpaper-rose { --tg-chat-bg: #b07a8a; }
+        body.text-size-small { --tg-msg-font: 0.88rem; }
+        body.text-size-medium { --tg-msg-font: 0.95rem; }
+        body.text-size-large { --tg-msg-font: 1.05rem; }
+        .chat-bubble-text { font-size: var(--tg-msg-font, 0.95rem); }
+        body.reduce-motion * {
+            animation: none !important;
+            transition: none !important;
+            scroll-behavior: auto !important;
+        }
+        body.hide-timestamps .chat-bubble-meta time { display: none; }
+        body.hide-read-checks .chat-bubble-meta .bi-check2-all { display: none; }
+        body.hide-peer-email .tg-header-sub { display: none; }
+        body.compact-chat-list .tg-chat-row { padding: 0.45rem 0.75rem; }
+        .tg-back { display: none; }
+        @media (max-width: 1100px) {
+            .tg-app.media-open {
+                grid-template-columns: minmax(240px, 300px) 1fr minmax(260px, 340px);
+            }
+        }
+        @media (max-width: 900px) {
+            .tg-app,
+            .tg-app.media-open { grid-template-columns: 1fr; }
+            .tg-main { display: none; }
+            .tg-media-panel { display: none !important; position: fixed; inset: 0; z-index: 20; border: 0; }
+            .tg-app.has-chat .tg-sidebar { display: none; }
+            .tg-app.has-chat .tg-main { display: flex; }
+            .tg-app.media-open .tg-media-panel { display: flex !important; }
+            .tg-back { display: inline-grid; }
+        }
     </style>
     <title>Private Chat</title>
 </head>
-<body class="py-4 bg-body-tertiary" data-conversation-id="{{ conversation[0] if conversation else '' }}" data-current-user-id="{{ user[0] }}">
-    <main class="container">
-        <header class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4">
-            <a href="{{ url_for('dashboard') }}" class="fs-4 text-decoration-none">Mezali Data Center</a>
-            <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#chatSettings" aria-expanded="false" aria-controls="chatSettings">Chat settings</button>
-                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a>
-            </div>
-        </header>
-        <h1 class="h3 mb-4">Chat</h1>
-        <div class="row g-3">
-            <aside class="col-lg-4">
-                <form action="{{ url_for('chat_page') }}" method="GET" class="input-group mb-3">
-                    <input class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search username or email" aria-label="Search username or email">
-                    <button class="btn btn-outline-primary" type="submit">Search</button>
-                </form>
-                {% if search_query %}
-                <div class="mb-3">
-                    <h2 class="h6">Search results</h2>
-                    {% for result in search_results %}
-                    <a class="d-block border rounded p-2 mb-2 text-decoration-none" href="{{ url_for('chat_page', user_id=result[0]) }}">
-                        <strong>{{ result[1] }}</strong><br><small>{{ result[2] }}</small>
-                    </a>
-                    {% else %}<p class="text-body-secondary">No users found.</p>{% endfor %}
-                </div>
-                {% endif %}
-                <h2 class="h6">Conversations</h2>
-                <div class="list-group">
-                    {% for item in conversations[:5] %}
-                    <a class="list-group-item list-group-item-action {% if conversation and item[0] == conversation[0] %}active{% endif %}" href="{{ url_for('chat_page', conversation_id=item[0]) }}">
-                        <div class="d-flex justify-content-between"><strong>{{ item[2] }}</strong>{% if item[5] %}<small>{{ item[5][:10] }}</small>{% endif %}</div>
-                        <small>{{ item[3] }}</small>
-                        {% if item[4] %}<div class="text-truncate small mt-1">{{ item[4] }}</div>{% endif %}
-                    </a>
-                    {% else %}<p class="text-body-secondary">No conversations yet.</p>{% endfor %}
-                </div>
-                {% if conversations|length > 5 %}
-                <button class="btn btn-sm btn-outline-secondary mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#more-conversations" aria-expanded="false" aria-controls="more-conversations">Show more conversations</button>
-                <div class="collapse mt-2" id="more-conversations">
-                    <div class="list-group">
-                    {% for item in conversations[5:] %}
-                    <a class="list-group-item list-group-item-action {% if conversation and item[0] == conversation[0] %}active{% endif %}" href="{{ url_for('chat_page', conversation_id=item[0]) }}">
-                        <div class="d-flex justify-content-between"><strong>{{ item[2] }}</strong>{% if item[5] %}<small>{{ item[5][:10] }}</small>{% endif %}</div>
-                        <small>{{ item[3] }}</small>
-                        {% if item[4] %}<div class="text-truncate small mt-1">{{ item[4] }}</div>{% endif %}
-                    </a>
-                    {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </aside>
-            <section class="col-lg-8">
-            {% if not other_user %}
-            <div class="border rounded bg-white p-4 text-body-secondary">Search for a user to start chatting.</div>
-            {% elif conversation %}
-            <div class="border rounded bg-white p-3">
-                <h2 class="h5">{% if other_user[3] %}<img class="rounded-circle chat-avatar me-1" src="{{ url_for('profile_picture', user_id=other_user[0]) }}" alt="">{% endif %}{{ other_user[1] }} <small class="text-body-secondary">{{ other_user[2] }}</small></h2>
-                <section id="messages" class="border rounded p-3 mb-3" style="height: 360px; overflow-y: auto;">
-                    {% for message in messages %}
-                    <div class="mb-2 d-flex {% if message[1] == user[0] %}justify-content-end{% endif %}">
-                        <div class="chat-bubble {% if message[1] == user[0] %}own{% else %}other{% endif %}">
-                            <span class="chat-sender">{% if message[8] %}<img class="rounded-circle chat-avatar me-1" src="{{ url_for('profile_picture', user_id=message[1]) }}" alt="">{% endif %}{{ message[2] }}</span>
-                            {% if message[3] %}<div>{{ message[3] }}</div>{% endif %}
-                            {% if message[5] %}<button type="button" class="btn btn-link p-0 file-preview-link chat-attachment {% if message[1] == user[0] %}link-light{% endif %}" data-file-id="{{ message[4] }}" data-file-name="{{ message[5] }}" data-file-mime="{{ message[6] }}" data-file-url="{{ url_for('preview_shared_file', conversation_id=conversation[0], item_id=message[4]) }}" data-download-url="{{ url_for('download_shared_file', conversation_id=conversation[0], item_id=message[4]) }}"></button>{% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </section>
-                <form id="message-form" class="input-group">
-                    <input id="message-input" class="form-control" type="text" placeholder="Write a message" autocomplete="off">
-                    <select id="file-input" class="form-select" aria-label="Attach a stored file" style="max-width: 220px;">
-                        <option value="">Attach file</option>
-                        {% for item in storage_items %}<option value="{{ item[0] }}">{{ item[1] }}</option>{% endfor %}
-                    </select>
-                    <button class="btn btn-primary" type="submit">Send</button>
-                </form>
-            </div>
-            {% endif %}
-            </section>
-        </div>
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="chatSettings" aria-labelledby="chatSettingsTitle">
-            <div class="offcanvas-header"><h2 class="h5" id="chatSettingsTitle">Chat settings</h2><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button></div>
-            <div class="offcanvas-body">
-                <label class="form-label" for="theme-select">Theme</label>
-                <select class="form-select mb-3" id="theme-select"><option value="default">Default</option><option value="ocean">Ocean</option><option value="sunset">Sunset</option><option value="forest">Forest</option></select>
-                <label class="form-label" for="bubble-style">Bubble shape</label>
-                <select class="form-select mb-3" id="bubble-style"><option value="rounded">Rounded</option><option value="soft">Soft</option><option value="square">Square</option></select>
-                <label class="form-label" for="bubble-color">Your bubble color</label>
-                <input class="form-control form-control-color mb-3" type="color" id="bubble-color" value="#0d6efd" title="Choose your bubble color">
-                <button class="btn btn-outline-danger" type="button" id="reset-chat-settings">Reset settings</button>
-            </div>
-        </div>
-        <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalTitle" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="h5 modal-title" id="fileModalTitle">File details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="fileModalBody"></div><div class="modal-footer"><a class="btn btn-primary" id="fileDownload" href="#">Download file</a><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div>
-        </div>
-        <audio id="message-notification" preload="auto" src="{{ url_for('chat_notification_sound') }}"></audio>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-        {% if conversation %}
-        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-        <script>
-            const socket = io();
-            const conversationId = Number(document.body.dataset.conversationId);
-            const currentUserId = Number(document.body.dataset.currentUserId);
-            const messages = document.getElementById('messages');
-            const input = document.getElementById('message-input');
-            const fileInput = document.getElementById('file-input');
-            const fileModal = new bootstrap.Modal(document.getElementById('fileModal'));
-            const notificationSound = document.getElementById('message-notification');
-            socket.on('connect', () => socket.emit('join_chat', {conversation_id: conversationId}));
-            socket.on('new_message', (message) => {
-                const isOwnMessage = message.sender_id === currentUserId;
-                if (!isOwnMessage) {
-                    notificationSound.currentTime = 0;
-                    notificationSound.play().catch(() => {});
-                }
-                const line = document.createElement('div');
-                line.className = `mb-2 d-flex ${isOwnMessage ? 'justify-content-end' : ''}`;
-                const bubble = document.createElement('div');
-                bubble.className = `chat-bubble ${isOwnMessage ? 'own' : 'other'}`;
-                const sender = document.createElement('span');
-                sender.className = 'chat-sender';
-                sender.textContent = isOwnMessage ? 'You' : 'Other user';
-                if (message.profile_picture) {
-                    const avatar = document.createElement('img');
-                    avatar.className = 'rounded-circle chat-avatar me-1';
-                    avatar.src = `/profile/${message.sender_id}/picture`;
-                    avatar.alt = '';
-                    sender.prepend(avatar);
-                }
-                const text = document.createElement('div');
-                text.textContent = message.body || 'File shared';
-                bubble.append(sender, text);
-                if (message.storage_item_id) {
-                    const attachment = document.createElement('button');
-                    attachment.type = 'button';
-                    attachment.className = `btn btn-link p-0 chat-attachment file-preview-link ${isOwnMessage ? 'link-light' : ''}`;
-                    attachment.dataset.fileId = message.storage_item_id;
-                    attachment.dataset.fileName = message.filename || 'Shared file';
-                    attachment.dataset.fileMime = message.mime_type || '';
-                    attachment.dataset.fileUrl = `/chat/${conversationId}/files/${message.storage_item_id}/preview`;
-                    attachment.dataset.downloadUrl = `/chat/${conversationId}/files/${message.storage_item_id}/download`;
-                    decorateAttachment(attachment);
-                    bubble.appendChild(attachment);
-                    bindFilePreview(attachment);
-                }
-                line.appendChild(bubble);
-                messages.appendChild(line);
-                messages.scrollTop = messages.scrollHeight;
-            });
-            document.getElementById('message-form').addEventListener('submit', (event) => {
-                event.preventDefault();
-                const body = input.value.trim();
-                const storageItemId = fileInput.value || null;
-                if (!body && !storageItemId) return;
-                socket.emit('send_message', {conversation_id: conversationId, body, storage_item_id: storageItemId});
-                input.value = '';
-                fileInput.value = '';
-            });
-        </script>
+<body class="{% if conversation %}has-open-chat{% endif %}" data-conversation-id="{{ conversation[0] if conversation else '' }}" data-current-user-id="{{ user[0] }}">
+{% macro initials(name) -%}
+{{- (name or '?')[:1]|upper -}}
+{%- endmacro %}
+{% macro format_time(value) -%}
+{%- if value -%}
+{%- set t = value[11:16] if value|length >= 16 else value[:5] -%}
+{{- t -}}
+{%- endif -%}
+{%- endmacro %}
+{% macro conversation_menu(conversation_id, peer_name, peer_user_id=None) -%}
+<div class="dropdown conversation-menu">
+    <button class="tg-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Conversation options">
+        <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        {% if peer_user_id %}
+        <li><a class="dropdown-item" href="{{ url_for('view_profile', user_id=peer_user_id, next=request.full_path) }}">View profile</a></li>
         {% endif %}
-        <script src="{{ url_for('static', filename='theme.js') }}"></script>
-        <script>
-            const chatSettingsKey = 'mezali-chat-settings';
-            const page = document.body;
-            const settings = JSON.parse(localStorage.getItem(chatSettingsKey) || '{}');
-            const themeSelect = document.getElementById('theme-select');
-            const bubbleStyle = document.getElementById('bubble-style');
-            const bubbleColor = document.getElementById('bubble-color');
-            function applyChatSettings() {
-                page.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
-                if (settings.theme && settings.theme !== 'default') page.classList.add(`theme-${settings.theme}`);
-                page.style.setProperty('--bubble-own', settings.color || '#0d6efd');
-                page.style.setProperty('--bubble-radius', settings.shape === 'square' ? '2px' : settings.shape === 'soft' ? '8px' : '16px');
-                if (themeSelect) themeSelect.value = settings.theme || 'default';
-                if (bubbleStyle) bubbleStyle.value = settings.shape || 'rounded';
-                if (bubbleColor) bubbleColor.value = settings.color || '#0d6efd';
-            }
-            function saveChatSettings() { localStorage.setItem(chatSettingsKey, JSON.stringify(settings)); applyChatSettings(); }
-            themeSelect?.addEventListener('change', event => { settings.theme = event.target.value; saveChatSettings(); });
-            bubbleStyle?.addEventListener('change', event => { settings.shape = event.target.value; saveChatSettings(); });
-            bubbleColor?.addEventListener('input', event => { settings.color = event.target.value; saveChatSettings(); });
-            document.getElementById('reset-chat-settings')?.addEventListener('click', () => { localStorage.removeItem(chatSettingsKey); Object.keys(settings).forEach(key => delete settings[key]); applyChatSettings(); });
-            applyChatSettings();
-            function decorateAttachment(link) {
-                const mime = link.dataset.fileMime || '';
-                const name = link.dataset.fileName || 'Shared file';
-                const extension = name.split('.').pop().toLowerCase();
-                link.replaceChildren();
-                if (mime.startsWith('image/')) {
-                    const image = document.createElement('img');
-                    image.className = 'chat-attachment-preview';
-                    image.src = link.dataset.fileUrl;
-                    image.alt = name;
-                    link.appendChild(image);
-                } else {
-                    const icon = document.createElement('i');
-                    icon.className = 'bi chat-attachment-icon ' + (mime.startsWith('video/') ? 'bi-file-earmark-play' : mime.startsWith('audio/') ? 'bi-file-earmark-music' : mime === 'application/pdf' ? 'bi-file-earmark-pdf' : mime.startsWith('text/') ? 'bi-file-earmark-text' : 'bi-file-earmark');
-                    icon.setAttribute('aria-hidden', 'true');
-                    link.appendChild(icon);
-                }
-                const label = document.createElement('span');
-                label.textContent = name;
-                link.appendChild(label);
-            }
+        <li><a class="dropdown-item" href="{{ url_for('export_chat', conversation_id=conversation_id) }}">Export chat</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <form action="{{ url_for('delete_chat', conversation_id=conversation_id) }}" method="POST" onsubmit="return confirm('Delete chat history with {{ peer_name|e }}?');">
+                <button class="dropdown-item text-danger" type="submit">Delete chat history</button>
+            </form>
+        </li>
+    </ul>
+</div>
+{%- endmacro %}
 
-            function bindFilePreview(link) { link.addEventListener('click', () => {
-                const name = link.dataset.fileName;
-                const extension = name.split('.').pop().toLowerCase();
-                const body = document.getElementById('fileModalBody');
-                document.getElementById('fileModalTitle').textContent = name;
-                document.getElementById('fileDownload').href = link.dataset.downloadUrl;
-                body.replaceChildren();
-                const details = document.createElement('p');
-                details.textContent = `File name: ${name} | Type: ${extension.toUpperCase()}`;
-                body.appendChild(details);
-                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-                    const image = document.createElement('img');
-                    image.className = 'img-fluid rounded';
-                    image.src = link.dataset.fileUrl;
-                    image.alt = name;
-                    body.appendChild(image);
-                } else if (['mp4', 'webm', 'mov', 'mkv'].includes(extension)) {
-                    const video = document.createElement('video');
-                    video.className = 'w-100 rounded';
-                    video.controls = true;
-                    video.src = link.dataset.fileUrl;
-                    body.appendChild(video);
-                } else if (extension === 'pdf') {
-                    const pdf = document.createElement('iframe');
-                    pdf.className = 'w-100';
-                    pdf.style.height = '60vh';
-                    pdf.src = link.dataset.fileUrl;
-                    pdf.title = 'PDF preview';
-                    body.appendChild(pdf);
+<div class="tg-app {% if conversation %}has-chat{% endif %}" id="tg-app">
+    <aside class="tg-sidebar">
+        <div class="tg-sidebar-top">
+            <a class="tg-brand" href="{{ url_for('dashboard') }}">Mezalions</a>
+            <form action="{{ url_for('chat_page') }}" method="GET" class="tg-search" role="search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Search" aria-label="Search username or email">
+            </form>
+            <div class="tg-sidebar-actions">
+                <button class="tg-icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#chatSettings" aria-label="Chat settings">
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                </button>
+                <a class="tg-icon-btn" href="{{ url_for('logout') }}" aria-label="Logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
+            </div>
+        </div>
+        {% if search_query %}
+        <div class="tg-search-results">
+            <h2>People</h2>
+            {% for result in search_results %}
+            <a class="tg-chat-row" href="{{ url_for('chat_page', user_id=result[0]) }}">
+                <span class="tg-avatar" aria-hidden="true">{{ initials(result[1]) }}</span>
+                <span class="tg-chat-meta">
+                    <span class="tg-chat-top"><span class="tg-chat-name">{{ result[1] }}</span></span>
+                    <span class="tg-chat-preview">{{ result[2] }}</span>
+                </span>
+            </a>
+            {% else %}
+            <p class="px-3 py-2 text-body-secondary small mb-0">No users found.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="tg-chat-list" role="navigation" aria-label="Conversations">
+            {% for item in conversations %}
+            <div class="d-flex align-items-stretch">
+                <a class="tg-chat-row {% if conversation and item[0] == conversation[0] %}active{% endif %}" href="{{ url_for('chat_page', conversation_id=item[0]) }}">
+                    {% if item[6] %}
+                    <img class="tg-avatar" src="{{ url_for('profile_picture', user_id=item[1]) }}" alt="">
+                    {% else %}
+                    <span class="tg-avatar" aria-hidden="true">{{ initials(item[2]) }}</span>
+                    {% endif %}
+                    <span class="tg-chat-meta">
+                        <span class="tg-chat-top">
+                            <span class="tg-chat-name">{{ item[2] }}</span>
+                            <span class="tg-chat-time">{{ format_time(item[5]) }}</span>
+                        </span>
+                        <span class="tg-chat-preview">{% if item[4] %}{{ item[4] }}{% else %}No messages yet{% endif %}</span>
+                    </span>
+                </a>
+                <div class="d-flex align-items-center pe-2">{{ conversation_menu(item[0], item[2], item[1]) }}</div>
+            </div>
+            {% else %}
+            <p class="px-3 py-4 text-body-secondary small mb-0">No conversations yet. Search for a user to start chatting.</p>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <section class="tg-main">
+        {% if not other_user %}
+        <div class="tg-main-empty">
+            <div class="tg-empty-card">
+                <p class="mb-0">Select a chat to start messaging</p>
+            </div>
+        </div>
+        {% elif conversation %}
+        <header class="tg-header" id="chat-header">
+            <a class="tg-icon-btn tg-back" href="{{ url_for('chat_page') }}" aria-label="Back to chats">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            </a>
+            {% if other_user[3] %}
+            <img class="tg-avatar sm" src="{{ url_for('profile_picture', user_id=other_user[0]) }}" alt="">
+            {% else %}
+            <span class="tg-avatar sm" aria-hidden="true">{{ initials(other_user[1]) }}</span>
+            {% endif %}
+            <div class="tg-header-info">
+                <h1 class="tg-header-name">{{ other_user[1] }}</h1>
+                <p class="tg-header-sub">{{ other_user[2] }}</p>
+            </div>
+            <div class="tg-chat-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" id="chat-search-input" placeholder="Search in chat" aria-label="Search in chat" autocomplete="off">
+                <button type="button" class="tg-icon-btn" id="chat-search-close" aria-label="Close search"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+            <button type="button" class="tg-icon-btn" id="chat-search-open" title="Search in chat" aria-label="Search in chat">
+                <i class="bi bi-search" aria-hidden="true"></i>
+            </button>
+            {{ conversation_menu(conversation[0], other_user[1], other_user[0]) }}
+        </header>
+        <div class="tg-messages-wrap">
+            <div class="tg-search-panel" id="chat-search-panel" aria-live="polite"></div>
+            <section id="messages" class="chat-messages" aria-live="polite">
+                {% for message in messages %}
+                <div class="tg-msg {% if message[1] == user[0] %}own{% else %}other{% endif %}" data-message-id="{{ message[0] }}" data-sender-id="{{ message[1] }}" data-body="{{ (message[3] or '')|e }}" data-filename="{{ (message[5] or '')|e }}" data-mime="{{ (message[6] or '')|e }}" {% if message[9] %}data-edited="1"{% endif %}>
+                    <div class="chat-bubble {% if message[1] == user[0] %}own{% else %}other{% endif %}">
+                        {% if message[3] %}<div class="chat-bubble-body" data-body="{{ message[3]|e }}"></div>{% endif %}
+                        {% if message[5] %}<button type="button" class="btn btn-link p-0 file-preview-link chat-attachment" data-file-id="{{ message[4] }}" data-file-name="{{ message[5] }}" data-file-mime="{{ message[6] }}" data-file-url="{{ url_for('preview_shared_file', conversation_id=conversation[0], item_id=message[4]) }}" data-download-url="{{ url_for('download_shared_file', conversation_id=conversation[0], item_id=message[4]) }}"></button>{% endif %}
+                        <div class="chat-bubble-meta">{% if message[9] %}<span class="chat-edited-label">edited</span>{% endif %}<time>{{ format_time(message[7]) }}</time>{% if message[1] == user[0] %}<i class="bi bi-check2-all" aria-hidden="true"></i>{% endif %}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </section>
+            <button type="button" class="chat-jump-latest" id="jump-to-latest" title="Show last message" aria-label="Show last message">
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="tg-composer-wrap">
+            <div id="attach-selection" aria-live="polite"></div>
+            <form id="message-form" class="tg-composer">
+                <button class="tg-attach-btn tg-emoji-btn" type="button" id="toggle-media-panel" title="Emoji, stickers and GIFs" aria-label="Emoji, stickers and GIFs" aria-expanded="false">
+                    <i class="bi bi-emoji-smile-fill" aria-hidden="true"></i>
+                </button>
+                <button class="tg-attach-btn" type="button" id="open-storage-browser" title="Attach from your storage" aria-label="Attach">
+                    <i class="bi bi-paperclip" aria-hidden="true"></i>
+                </button>
+                <input id="message-input" type="text" placeholder="Message" autocomplete="off" aria-label="Message">
+                <div class="tg-recording-bar" id="recording-bar" aria-live="polite">
+                    <span class="tg-recording-dot" aria-hidden="true"></span>
+                    <span class="tg-recording-time" id="recording-time">0:00</span>
+                    <button type="button" class="tg-recording-cancel" id="voice-cancel">Cancel</button>
+                </div>
+                <button class="tg-send-btn" type="submit" id="send-btn" aria-label="Send" hidden>
+                    <i class="bi bi-send-fill" aria-hidden="true"></i>
+                </button>
+                <button class="tg-voice-btn" type="button" id="voice-btn" title="Record voice message" aria-label="Record voice message">
+                    <i class="bi bi-mic-fill" aria-hidden="true"></i>
+                </button>
+                <input type="file" id="voice-file-input" accept="audio/*,.webm,.ogg,.mp3,.m4a,.wav,.aac" capture="user" hidden>
+            </form>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if conversation %}
+    <aside class="tg-media-panel" id="media-panel" aria-label="Emoji stickers and GIFs">
+        <div class="tg-media-tabs" role="tablist">
+            <button type="button" class="active" data-media-tab="emoji" role="tab" aria-selected="true">Emoji</button>
+            <button type="button" data-media-tab="stickers" role="tab" aria-selected="false">Stickers</button>
+            <button type="button" data-media-tab="gifs" role="tab" aria-selected="false">GIFs</button>
+        </div>
+        <div class="tg-media-toolbar">
+            <div class="tg-media-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" id="media-search-input" placeholder="Search" aria-label="Search emoji stickers or GIFs" autocomplete="off">
+            </div>
+            <div class="tg-quick-reactions" id="quick-reactions"></div>
+            <button type="button" class="tg-icon-btn d-md-none" id="media-panel-close" aria-label="Close panel"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+        </div>
+        <div class="tg-media-body" id="media-body"></div>
+        <div class="tg-media-cats" id="media-cats" hidden></div>
+    </aside>
+    {% endif %}
+</div>
+
+<div class="offcanvas offcanvas-end tg-settings-offcanvas" tabindex="-1" id="chatSettings" aria-labelledby="chatSettingsTitle">
+    <div class="offcanvas-header">
+        <button type="button" class="tg-icon-btn" id="settings-back" hidden aria-label="Back">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        </button>
+        <h2 class="h5 mb-0" id="chatSettingsTitle">Settings</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body tg-settings-panels">
+        <section class="tg-settings-panel is-active" data-settings-panel="home">
+            <a class="tg-settings-profile" href="{{ url_for('view_profile', user_id=user[0], next=request.full_path) }}">
+                {% if user[3] %}
+                <img class="tg-settings-avatar" src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="">
+                {% else %}
+                <span class="tg-settings-avatar" aria-hidden="true">{{ initials(user[1]) }}</span>
+                {% endif %}
+                <span>
+                    <p class="tg-settings-name">{{ user[1] }}</p>
+                    <p class="tg-settings-sub">{{ user[2] }}</p>
+                </span>
+            </a>
+            <ul class="tg-settings-list">
+                <li><button type="button" data-settings-open="account"><span class="tg-settings-ico blue"><i class="bi bi-person" aria-hidden="true"></i></span><span class="tg-settings-label">My Account</span><i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i></button></li>
+                <li><button type="button" data-settings-open="notifications"><span class="tg-settings-ico red"><i class="bi bi-bell" aria-hidden="true"></i></span><span class="tg-settings-label">Notifications and Sounds</span><i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i></button></li>
+                <li><button type="button" data-settings-open="privacy"><span class="tg-settings-ico green"><i class="bi bi-lock" aria-hidden="true"></i></span><span class="tg-settings-label">Privacy and Security</span><i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i></button></li>
+                <li><button type="button" data-settings-open="chat"><span class="tg-settings-ico orange"><i class="bi bi-chat-dots" aria-hidden="true"></i></span><span class="tg-settings-label">Chat Settings</span><i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i></button></li>
+                <li><button type="button" data-settings-open="advanced"><span class="tg-settings-ico gray"><i class="bi bi-sliders" aria-hidden="true"></i></span><span class="tg-settings-label">Advanced</span><i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i></button></li>
+                <li><button type="button" data-settings-open="language"><span class="tg-settings-ico purple"><i class="bi bi-translate" aria-hidden="true"></i></span><span class="tg-settings-label">Language</span><span class="tg-settings-meta" id="settings-lang-meta">English</span></button></li>
+            </ul>
+            <div class="tg-settings-row mt-2">
+                <div>
+                    <div class="form-label">Dark mode</div>
+                    <p class="tg-settings-hint mb-0">Use Mezalion night appearance</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-dark-mode" data-dark-theme-toggle>
+                </div>
+            </div>
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Interface scale</div>
+                    <p class="tg-settings-hint mb-0" id="settings-scale-label">100%</p>
+                </div>
+            </div>
+            <input type="range" class="form-range" id="settings-scale" min="90" max="120" step="5" value="100">
+        </section>
+
+        <section class="tg-settings-panel" data-settings-panel="account">
+            <p class="tg-settings-hint">Manage your Mezalion account from the dashboard settings.</p>
+            <ul class="tg-settings-list">
+                <li><a href="{{ url_for('view_profile', user_id=user[0], next=request.full_path) }}"><span class="tg-settings-ico blue"><i class="bi bi-person-badge" aria-hidden="true"></i></span><span class="tg-settings-label">View my profile</span></a></li>
+                <li><a href="{{ url_for('dashboard') }}"><span class="tg-settings-ico teal"><i class="bi bi-gear" aria-hidden="true"></i></span><span class="tg-settings-label">Account settings</span></a></li>
+            </ul>
+        </section>
+
+        <section class="tg-settings-panel" data-settings-panel="notifications">
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Message sounds</div>
+                    <p class="tg-settings-hint mb-0">Play a sound for incoming messages</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-sounds" checked>
+                </div>
+            </div>
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">In-app alerts</div>
+                    <p class="tg-settings-hint mb-0">Keep the Latest button visible for unread jumps</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-alerts" checked>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="settings-test-sound">Test sound</button>
+        </section>
+
+        <section class="tg-settings-panel" data-settings-panel="privacy">
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Show email in chat header</div>
+                    <p class="tg-settings-hint mb-0">Hide peer email under their name</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-show-email" checked>
+                </div>
+            </div>
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Show read checks</div>
+                    <p class="tg-settings-hint mb-0">Display double-check marks on your messages</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-read-checks" checked>
+                </div>
+            </div>
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Show timestamps</div>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-timestamps" checked>
+                </div>
+            </div>
+        </section>
+
+        <section class="tg-settings-panel" data-settings-panel="chat">
+            <label class="form-label" for="theme-select">Color theme</label>
+            <select class="form-select mb-3" id="theme-select">
+                <option value="default">Default</option>
+                <option value="ocean">Ocean</option>
+                <option value="sunset">Sunset</option>
+                <option value="forest">Forest</option>
+            </select>
+            <label class="form-label" for="bubble-style">Bubble shape</label>
+            <select class="form-select mb-3" id="bubble-style">
+                <option value="rounded">Rounded</option>
+                <option value="soft">Soft</option>
+                <option value="square">Square</option>
+            </select>
+            <label class="form-label" for="bubble-color">Your bubble color</label>
+            <input class="form-control form-control-color mb-3" type="color" id="bubble-color" value="#effdde" title="Choose your bubble color">
+            <label class="form-label" for="settings-text-size">Message text size</label>
+            <select class="form-select mb-3" id="settings-text-size">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+            </select>
+            <div class="form-label">Chat wallpaper</div>
+            <div class="tg-wallpaper-grid" id="settings-wallpapers">
+                <button type="button" class="tg-wallpaper-opt is-active" data-wallpaper="default" title="Default" aria-label="Default wallpaper"></button>
+                <button type="button" class="tg-wallpaper-opt" data-wallpaper="night" title="Night" aria-label="Night wallpaper"></button>
+                <button type="button" class="tg-wallpaper-opt" data-wallpaper="graphite" title="Graphite" aria-label="Graphite wallpaper"></button>
+                <button type="button" class="tg-wallpaper-opt" data-wallpaper="mint" title="Mint" aria-label="Mint wallpaper"></button>
+                <button type="button" class="tg-wallpaper-opt" data-wallpaper="sand" title="Sand" aria-label="Sand wallpaper"></button>
+                <button type="button" class="tg-wallpaper-opt" data-wallpaper="rose" title="Rose" aria-label="Rose wallpaper"></button>
+            </div>
+            <div class="tg-settings-row mt-3">
+                <div>
+                    <div class="form-label">Send with Enter</div>
+                    <p class="tg-settings-hint mb-0">Press Enter to send messages</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-send-enter" checked>
+                </div>
+            </div>
+            <button class="btn btn-outline-danger mt-3" type="button" id="reset-chat-settings">Reset chat appearance</button>
+        </section>
+
+        <section class="tg-settings-panel" data-settings-panel="advanced">
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Reduce motion</div>
+                    <p class="tg-settings-hint mb-0">Disable animations and smooth scrolling</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-reduce-motion">
+                </div>
+            </div>
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Auto-scroll to latest</div>
+                    <p class="tg-settings-hint mb-0">Jump down when you send a message</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-autoscroll" checked>
+                </div>
+            </div>
+            <div class="tg-settings-row">
+                <div>
+                    <div class="form-label">Compact explorer density</div>
+                    <p class="tg-settings-hint mb-0">Tighter spacing in the chat list</p>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="settings-compact">
+                </div>
+            </div>
+        </section>
+
+        <section class="tg-settings-panel" data-settings-panel="language">
+            <label class="form-label" for="settings-language">App language</label>
+            <select class="form-select" id="settings-language">
+                <option value="en">English</option>
+                <option value="my">Myanmar (coming soon)</option>
+            </select>
+            <p class="tg-settings-hint mt-2">More languages will be added in a later update.</p>
+        </section>
+    </div>
+</div>
+
+<div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="h5 modal-title" id="fileModalTitle">File details</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="fileModalBody"></div>
+            <div class="modal-footer">
+                <a class="btn btn-primary" id="fileDownload" href="#">Download file</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="storage-browser-modal" tabindex="-1" aria-labelledby="storage-browser-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="h5 modal-title" id="storage-browser-title">Attach from storage</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <nav class="storage-browser-crumb mb-2" id="storage-browser-crumb" aria-label="Folder path"></nav>
+                <p class="small text-body-secondary mb-2">Click folders to open them. Select one or more files to attach.</p>
+                <div class="storage-browser-grid" id="storage-browser-grid"></div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span class="small text-body-secondary" id="storage-browser-count">0 selected</span>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" id="storage-browser-clear">Clear</button>
+                    <button type="button" class="btn btn-primary" id="storage-browser-attach" disabled>Attach selected</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade tg-edit-modal" id="editMessageModal" tabindex="-1" aria-labelledby="editMessageTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="h5 modal-title" id="editMessageTitle">Edit message</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="edit-message-input">Message</label>
+                <textarea class="form-control" id="edit-message-input" maxlength="4000"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="edit-message-save">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tg-ctx-menu" id="message-context-menu" role="menu" aria-hidden="true">
+    <button type="button" data-ctx-action="copy" role="menuitem"><i class="bi bi-clipboard" aria-hidden="true"></i> Copy</button>
+    <button type="button" data-ctx-action="edit" role="menuitem"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</button>
+    <button type="button" data-ctx-action="delete" class="danger" role="menuitem"><i class="bi bi-trash" aria-hidden="true"></i> Delete</button>
+</div>
+
+<audio id="message-notification" preload="auto" src="{{ url_for('chat_notification_sound') }}"></audio>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='chat-media.js') }}"></script>
+{% if conversation %}
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const conversationId = Number(document.body.dataset.conversationId);
+    const currentUserId = Number(document.body.dataset.currentUserId);
+    const messages = document.getElementById('messages');
+    const jumpToLatestBtn = document.getElementById('jump-to-latest');
+    const input = document.getElementById('message-input');
+    const attachSelection = document.getElementById('attach-selection');
+    const fileModal = new bootstrap.Modal(document.getElementById('fileModal'));
+    const storageBrowserModal = new bootstrap.Modal(document.getElementById('storage-browser-modal'));
+    const storageBrowserGrid = document.getElementById('storage-browser-grid');
+    const storageBrowserCrumb = document.getElementById('storage-browser-crumb');
+    const storageBrowserCount = document.getElementById('storage-browser-count');
+    const storageBrowserAttach = document.getElementById('storage-browser-attach');
+    const notificationSound = document.getElementById('message-notification');
+    const selectedAttachments = new Map();
+    let browserFolderId = null;
+    let browserPending = new Map();
+    let stickToBottom = true;
+
+    function formatMessageTime(iso) {
+        if (!iso) {
+            const now = new Date();
+            return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+        const match = String(iso).match(/T?(\d{2}):(\d{2})/);
+        if (match) return `${match[1]}:${match[2]}`;
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return '';
+        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function isNearBottom(threshold = 80) {
+        return messages.scrollHeight - messages.scrollTop - messages.clientHeight <= threshold;
+    }
+
+    function chatPrefs() {
+        return window.mezaliChatSettings || {};
+    }
+
+    function updateJumpLatestVisibility() {
+        const alertsOn = chatPrefs().alerts !== false;
+        jumpToLatestBtn.classList.toggle('is-visible', alertsOn && !isNearBottom());
+    }
+    window.updateJumpLatestVisibility = updateJumpLatestVisibility;
+
+    function scrollToLatest(smooth = false) {
+        stickToBottom = true;
+        const reduceMotion = Boolean(chatPrefs().reduceMotion);
+        messages.scrollTo({
+            top: messages.scrollHeight,
+            behavior: smooth && !reduceMotion ? 'smooth' : 'auto',
+        });
+        updateJumpLatestVisibility();
+    }
+    window.scrollToLatest = scrollToLatest;
+    Object.defineProperty(window, 'stickToBottom', {
+        get: () => stickToBottom,
+        set: (value) => { stickToBottom = Boolean(value); },
+    });
+
+    messages.addEventListener('scroll', () => {
+        stickToBottom = isNearBottom();
+        updateJumpLatestVisibility();
+    });
+    jumpToLatestBtn.addEventListener('click', () => scrollToLatest(true));
+
+    function formatVoiceTime(seconds) {
+        const total = Math.max(0, Math.floor(seconds || 0));
+        const mins = Math.floor(total / 60);
+        const secs = String(total % 60).padStart(2, '0');
+        return `${mins}:${secs}`;
+    }
+
+    function decorateAttachment(link) {
+        const mime = link.dataset.fileMime || '';
+        const name = link.dataset.fileName || 'Shared file';
+        const extension = (name.includes('.') ? name.split('.').pop() : '').toLowerCase();
+        const byExt = {
+            py: 'bi-filetype-py', js: 'bi-filetype-js', jsx: 'bi-filetype-jsx', ts: 'bi-filetype-tsx', tsx: 'bi-filetype-tsx',
+            html: 'bi-filetype-html', css: 'bi-filetype-css', json: 'bi-filetype-json', md: 'bi-filetype-md', pdf: 'bi-filetype-pdf',
+            png: 'bi-filetype-png', jpg: 'bi-filetype-jpg', jpeg: 'bi-filetype-jpg', gif: 'bi-filetype-gif', svg: 'bi-filetype-svg',
+            mp4: 'bi-filetype-mp4', mp3: 'bi-filetype-mp3', zip: 'bi-file-earmark-zip', rar: 'bi-file-earmark-zip',
+            doc: 'bi-filetype-doc', docx: 'bi-filetype-docx', xls: 'bi-filetype-xls', xlsx: 'bi-filetype-xlsx',
+            ppt: 'bi-filetype-ppt', pptx: 'bi-filetype-pptx', sql: 'bi-filetype-sql', sh: 'bi-filetype-sh',
+            java: 'bi-filetype-java', php: 'bi-filetype-php', rb: 'bi-filetype-rb', txt: 'bi-filetype-txt',
+        };
+        link.replaceChildren();
+        if (mime.startsWith('audio/')) {
+            link.classList.add('chat-voice-link');
+            const player = document.createElement('div');
+            player.className = 'chat-voice-player';
+            const playBtn = document.createElement('button');
+            playBtn.type = 'button';
+            playBtn.className = 'chat-voice-play';
+            playBtn.setAttribute('aria-label', 'Play voice message');
+            playBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i>';
+            const wave = document.createElement('div');
+            wave.className = 'chat-voice-wave';
+            const progress = document.createElement('div');
+            progress.className = 'chat-voice-progress';
+            wave.appendChild(progress);
+            const timeLabel = document.createElement('span');
+            timeLabel.className = 'chat-voice-time';
+            timeLabel.textContent = '0:00';
+            const audio = document.createElement('audio');
+            audio.preload = 'metadata';
+            audio.src = link.dataset.fileUrl;
+            playBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (audio.paused) {
+                    document.querySelectorAll('audio').forEach(other => {
+                        if (other !== audio) {
+                            other.pause();
+                            other.closest('.chat-voice-player')?.querySelector('.chat-voice-play')?.replaceChildren();
+                            const icon = document.createElement('i');
+                            icon.className = 'bi bi-play-fill';
+                            icon.setAttribute('aria-hidden', 'true');
+                            other.closest('.chat-voice-player')?.querySelector('.chat-voice-play')?.appendChild(icon);
+                        }
+                    });
+                    audio.play().catch(() => {});
+                    playBtn.innerHTML = '<i class="bi bi-pause-fill" aria-hidden="true"></i>';
                 } else {
-                    const unavailable = document.createElement('p');
-                    unavailable.className = 'text-body-secondary';
-                    unavailable.textContent = 'Preview is not available for this file type.';
-                    body.appendChild(unavailable);
+                    audio.pause();
+                    playBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i>';
                 }
-                fileModal.show();
-            }); }
-            document.querySelectorAll('.file-preview-link').forEach(link => { decorateAttachment(link); bindFilePreview(link); });
-        </script>
-    </main>
+            });
+            audio.addEventListener('loadedmetadata', () => {
+                if (Number.isFinite(audio.duration)) timeLabel.textContent = formatVoiceTime(audio.duration);
+            });
+            audio.addEventListener('timeupdate', () => {
+                const ratio = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+                progress.style.width = `${ratio}%`;
+                timeLabel.textContent = formatVoiceTime(audio.currentTime || audio.duration || 0);
+            });
+            audio.addEventListener('ended', () => {
+                progress.style.width = '0%';
+                playBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i>';
+                timeLabel.textContent = formatVoiceTime(audio.duration || 0);
+            });
+            player.append(playBtn, wave, timeLabel, audio);
+            link.appendChild(player);
+            return;
+        }
+        if (mime.startsWith('image/')) {
+            const image = document.createElement('img');
+            image.className = 'chat-attachment-preview';
+            image.src = link.dataset.fileUrl;
+            image.alt = name;
+            image.title = name;
+            link.appendChild(image);
+        } else {
+            const icon = document.createElement('i');
+            const fallback = mime.startsWith('video/') ? 'bi-file-earmark-play'
+                : mime === 'application/pdf' ? 'bi-file-earmark-pdf'
+                : mime.startsWith('text/') ? 'bi-file-earmark-text'
+                : 'bi-file-earmark';
+            icon.className = 'bi chat-attachment-icon ' + (byExt[extension] || fallback);
+            icon.setAttribute('aria-hidden', 'true');
+            link.appendChild(icon);
+            const label = document.createElement('span');
+            label.textContent = name;
+            link.appendChild(label);
+        }
+    }
+
+    function bindFilePreview(link) {
+        link.addEventListener('click', (event) => {
+            if ((link.dataset.fileMime || '').startsWith('audio/')) {
+                event.preventDefault();
+                return;
+            }
+            const name = link.dataset.fileName;
+            const extension = name.split('.').pop().toLowerCase();
+            const body = document.getElementById('fileModalBody');
+            document.getElementById('fileModalTitle').textContent = name;
+            document.getElementById('fileDownload').href = link.dataset.downloadUrl;
+            body.replaceChildren();
+            const details = document.createElement('p');
+            details.textContent = `File name: ${name} | Type: ${extension.toUpperCase()}`;
+            body.appendChild(details);
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+                const image = document.createElement('img');
+                image.className = 'img-fluid rounded';
+                image.src = link.dataset.fileUrl;
+                image.alt = name;
+                body.appendChild(image);
+            } else if (['mp4', 'webm', 'mov', 'mkv'].includes(extension)) {
+                const video = document.createElement('video');
+                video.className = 'w-100 rounded';
+                video.controls = true;
+                video.src = link.dataset.fileUrl;
+                body.appendChild(video);
+            } else if (extension === 'pdf') {
+                const pdf = document.createElement('iframe');
+                pdf.className = 'w-100';
+                pdf.style.height = '60vh';
+                pdf.src = link.dataset.fileUrl;
+                pdf.title = 'PDF preview';
+                body.appendChild(pdf);
+            } else {
+                const unavailable = document.createElement('p');
+                unavailable.className = 'text-body-secondary';
+                unavailable.textContent = 'Preview is not available for this file type.';
+                body.appendChild(unavailable);
+            }
+            fileModal.show();
+        });
+    }
+
+    function formatBytes(bytes) {
+        if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+        return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    function renderAttachChips() {
+        attachSelection.replaceChildren();
+        for (const [id, file] of selectedAttachments) {
+            const chip = document.createElement('span');
+            chip.className = 'attach-chip';
+            const isImage = (file.mime || '').startsWith('image/');
+            if (isImage && file.preview_url) {
+                const thumb = document.createElement('img');
+                thumb.src = file.preview_url;
+                thumb.alt = '';
+                thumb.className = 'attach-chip-thumb';
+                chip.appendChild(thumb);
+            }
+            const label = document.createElement('span');
+            label.className = 'text-truncate';
+            label.style.maxWidth = '160px';
+            label.textContent = isImage ? '...' : file.name;
+            label.title = file.name;
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.setAttribute('aria-label', `Remove ${file.name}`);
+            remove.innerHTML = '&times;';
+            remove.addEventListener('click', () => {
+                selectedAttachments.delete(id);
+                renderAttachChips();
+            });
+            chip.append(label, remove);
+            attachSelection.appendChild(chip);
+        }
+        updateComposerMode();
+    }
+
+    function updateBrowserCount() {
+        const count = browserPending.size;
+        storageBrowserCount.textContent = `${count} selected`;
+        storageBrowserAttach.disabled = count === 0;
+        storageBrowserAttach.textContent = count > 1 ? `Attach ${count} files` : 'Attach selected';
+    }
+
+    async function loadStorageBrowser(folderId = null) {
+        browserFolderId = folderId;
+        const query = folderId == null ? '' : `?folder_id=${folderId}`;
+        const response = await fetch(`/api/storage/browse${query}`);
+        const data = await response.json().catch(() => ({ folders: [], files: [] }));
+        if (!response.ok) {
+            storageBrowserGrid.innerHTML = '<p class="text-danger mb-0">Could not load storage.</p>';
+            return;
+        }
+
+        storageBrowserCrumb.replaceChildren();
+        const rootLink = document.createElement('a');
+        rootLink.href = '#';
+        rootLink.textContent = 'Root';
+        rootLink.addEventListener('click', event => {
+            event.preventDefault();
+            loadStorageBrowser(null);
+        });
+        storageBrowserCrumb.appendChild(rootLink);
+        if (data.folder_id != null) {
+            storageBrowserCrumb.append(document.createTextNode(' / '));
+            const current = document.createElement('strong');
+            current.textContent = data.folder_name;
+            storageBrowserCrumb.appendChild(current);
+        }
+
+        storageBrowserGrid.replaceChildren();
+        if (data.parent_id !== undefined && data.folder_id != null) {
+            const up = document.createElement('button');
+            up.type = 'button';
+            up.className = 'storage-browser-item';
+            up.innerHTML = '<div class="thumb"><i class="bi bi-arrow-up-left text-secondary"></i></div><div class="name">..</div>';
+            up.addEventListener('click', () => loadStorageBrowser(data.parent_id));
+            storageBrowserGrid.appendChild(up);
+        }
+
+        (data.folders || []).forEach(folder => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'storage-browser-item';
+            item.innerHTML = '<div class="thumb"><i class="bi bi-folder-fill text-warning"></i></div><div class="name"></div>';
+            item.querySelector('.name').textContent = folder.name;
+            item.addEventListener('click', () => loadStorageBrowser(folder.id));
+            storageBrowserGrid.appendChild(item);
+        });
+
+        (data.files || []).forEach(file => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'storage-browser-item';
+            if (browserPending.has(file.id)) item.classList.add('selected');
+            const thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            if (file.preview_url && (file.mime || '').startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = file.preview_url;
+                img.alt = file.name;
+                thumb.appendChild(img);
+            } else if (file.preview_url && (file.mime || '').startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = `${file.preview_url}#t=0.1`;
+                video.muted = true;
+                video.preload = 'metadata';
+                video.playsInline = true;
+                thumb.appendChild(video);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = `bi ${file.icon || 'bi-file-earmark'} ${file.color || 'text-secondary'}`;
+                thumb.appendChild(icon);
+            }
+            const name = document.createElement('div');
+            name.className = 'name';
+            name.textContent = file.name;
+            const meta = document.createElement('small');
+            meta.className = 'text-body-secondary';
+            meta.textContent = formatBytes(file.size || 0);
+            item.append(thumb, name, meta);
+            item.addEventListener('click', () => {
+                if (browserPending.has(file.id)) browserPending.delete(file.id);
+                else browserPending.set(file.id, file);
+                item.classList.toggle('selected', browserPending.has(file.id));
+                updateBrowserCount();
+            });
+            storageBrowserGrid.appendChild(item);
+        });
+
+        if (!(data.folders || []).length && !(data.files || []).length) {
+            const empty = document.createElement('p');
+            empty.className = 'text-body-secondary mb-0';
+            empty.style.gridColumn = '1 / -1';
+            empty.textContent = 'This folder is empty.';
+            storageBrowserGrid.appendChild(empty);
+        }
+        updateBrowserCount();
+    }
+
+    document.getElementById('open-storage-browser').addEventListener('click', () => {
+        browserPending = new Map([...selectedAttachments]);
+        updateBrowserCount();
+        loadStorageBrowser(browserFolderId);
+        storageBrowserModal.show();
+    });
+    document.getElementById('storage-browser-clear').addEventListener('click', () => {
+        browserPending.clear();
+        storageBrowserGrid.querySelectorAll('.storage-browser-item.selected').forEach(el => el.classList.remove('selected'));
+        updateBrowserCount();
+    });
+    storageBrowserAttach.addEventListener('click', () => {
+        selectedAttachments.clear();
+        for (const [id, file] of browserPending) selectedAttachments.set(id, file);
+        renderAttachChips();
+        storageBrowserModal.hide();
+    });
+
+    function decorateBubbleBody(bubble, body) {
+        if (!body) return;
+        const holder = document.createElement('div');
+        holder.className = 'chat-bubble-body';
+        ChatMedia.renderBodyInto(holder, body);
+        const parsed = ChatMedia.parseBody(body);
+        if (parsed.type === 'gif') bubble.classList.add('is-gif-bubble');
+        if (parsed.type === 'sticker') bubble.classList.add('is-sticker-bubble');
+        const meta = bubble.querySelector('.chat-bubble-meta');
+        if (meta) bubble.insertBefore(holder, meta);
+        else bubble.appendChild(holder);
+    }
+
+    function hydrateExistingBodies() {
+        document.querySelectorAll('.chat-bubble-body[data-body]').forEach(el => {
+            const body = el.dataset.body || '';
+            const bubble = el.closest('.chat-bubble');
+            ChatMedia.renderBodyInto(el, body);
+            const parsed = ChatMedia.parseBody(body);
+            if (parsed.type === 'gif') bubble?.classList.add('is-gif-bubble');
+            if (parsed.type === 'sticker') bubble?.classList.add('is-sticker-bubble');
+            el.removeAttribute('data-body');
+        });
+    }
+
+    function setEditedMeta(meta, edited) {
+        meta.querySelector('.chat-edited-label')?.remove();
+        if (!edited) return;
+        const label = document.createElement('span');
+        label.className = 'chat-edited-label';
+        label.textContent = 'edited';
+        const time = meta.querySelector('time');
+        if (time) meta.insertBefore(label, time);
+        else meta.prepend(label);
+    }
+
+    function refreshMessageBody(line, body) {
+        const bubble = line.querySelector('.chat-bubble');
+        if (!bubble) return;
+        bubble.querySelector('.chat-bubble-body')?.remove();
+        bubble.classList.remove('is-gif-bubble', 'is-sticker-bubble');
+        if (body) {
+            decorateBubbleBody(bubble, body);
+            line.dataset.body = body;
+        } else {
+            line.dataset.body = '';
+        }
+        const meta = bubble.querySelector('.chat-bubble-meta');
+        if (meta) setEditedMeta(meta, true);
+        line.dataset.edited = '1';
+    }
+
+    function appendMessage(message) {
+        const isOwnMessage = message.sender_id === currentUserId;
+        const line = document.createElement('div');
+        line.className = `tg-msg ${isOwnMessage ? 'own' : 'other'}`;
+        if (message.id) line.dataset.messageId = message.id;
+        line.dataset.senderId = message.sender_id;
+        line.dataset.body = message.body || '';
+        line.dataset.filename = message.filename || '';
+        line.dataset.mime = message.mime_type || '';
+        if (message.edited_at) line.dataset.edited = '1';
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${isOwnMessage ? 'own' : 'other'}`;
+        if (message.body) decorateBubbleBody(bubble, message.body);
+        else if (!message.storage_item_id) decorateBubbleBody(bubble, 'File shared');
+        if (message.storage_item_id) {
+            const attachment = document.createElement('button');
+            attachment.type = 'button';
+            attachment.className = 'btn btn-link p-0 chat-attachment file-preview-link';
+            attachment.dataset.fileId = message.storage_item_id;
+            attachment.dataset.fileName = message.filename || 'Shared file';
+            attachment.dataset.fileMime = message.mime_type || '';
+            attachment.dataset.fileUrl = `/chat/${conversationId}/files/${message.storage_item_id}/preview`;
+            attachment.dataset.downloadUrl = `/chat/${conversationId}/files/${message.storage_item_id}/download`;
+            decorateAttachment(attachment);
+            bindFilePreview(attachment);
+            bubble.appendChild(attachment);
+        }
+        const meta = document.createElement('div');
+        meta.className = 'chat-bubble-meta';
+        if (message.edited_at) {
+            const label = document.createElement('span');
+            label.className = 'chat-edited-label';
+            label.textContent = 'edited';
+            meta.appendChild(label);
+        }
+        const time = document.createElement('time');
+        time.textContent = formatMessageTime(message.created_at);
+        meta.appendChild(time);
+        if (isOwnMessage) {
+            const checks = document.createElement('i');
+            checks.className = 'bi bi-check2-all';
+            checks.setAttribute('aria-hidden', 'true');
+            meta.appendChild(checks);
+        }
+        bubble.appendChild(meta);
+        line.appendChild(bubble);
+        messages.appendChild(line);
+        const prefs = chatPrefs();
+        if (isOwnMessage) {
+            if (prefs.autoscroll !== false) scrollToLatest();
+            else updateJumpLatestVisibility();
+        } else if (stickToBottom) {
+            scrollToLatest();
+        } else {
+            updateJumpLatestVisibility();
+        }
+    }
+
+    const ctxMenu = document.getElementById('message-context-menu');
+    const editModalEl = document.getElementById('editMessageModal');
+    const editModal = new bootstrap.Modal(editModalEl);
+    const editInput = document.getElementById('edit-message-input');
+    let ctxTarget = null;
+    let editingMessageId = null;
+
+    function hideContextMenu() {
+        ctxMenu.classList.remove('is-open');
+        ctxMenu.setAttribute('aria-hidden', 'true');
+        ctxTarget = null;
+    }
+
+    function copyTextForMessage(line) {
+        const body = ChatMedia.decodeEscapedText(line.dataset.body || '');
+        const parsed = ChatMedia.parseBody(body);
+        if (parsed.type === 'sticker') return parsed.emoji;
+        if (parsed.type === 'gif') return parsed.url;
+        if (parsed.type === 'text' && parsed.text) return parsed.text;
+        if ((line.dataset.mime || '').startsWith('audio/')) return 'Voice message';
+        return line.dataset.filename || body || '';
+    }
+
+    function canEditMessage(line) {
+        if (Number(line.dataset.senderId) !== currentUserId) return false;
+        const body = ChatMedia.decodeEscapedText(line.dataset.body || '');
+        if (!body) return false;
+        const parsed = ChatMedia.parseBody(body);
+        return parsed.type === 'text' || parsed.type === 'sticker';
+    }
+
+    function canDeleteMessage(line) {
+        return Number(line.dataset.senderId) === currentUserId;
+    }
+
+    function openContextMenu(event, line) {
+        event.preventDefault();
+        ctxTarget = line;
+        const copyBtn = ctxMenu.querySelector('[data-ctx-action="copy"]');
+        const editBtn = ctxMenu.querySelector('[data-ctx-action="edit"]');
+        const deleteBtn = ctxMenu.querySelector('[data-ctx-action="delete"]');
+        copyBtn.disabled = !copyTextForMessage(line);
+        editBtn.disabled = !canEditMessage(line);
+        deleteBtn.disabled = !canDeleteMessage(line);
+        ctxMenu.classList.add('is-open');
+        ctxMenu.setAttribute('aria-hidden', 'false');
+        const pad = 8;
+        const rect = ctxMenu.getBoundingClientRect();
+        let left = event.clientX;
+        let top = event.clientY;
+        if (left + rect.width > window.innerWidth - pad) left = window.innerWidth - rect.width - pad;
+        if (top + rect.height > window.innerHeight - pad) top = window.innerHeight - rect.height - pad;
+        ctxMenu.style.left = `${Math.max(pad, left)}px`;
+        ctxMenu.style.top = `${Math.max(pad, top)}px`;
+    }
+
+    messages.addEventListener('contextmenu', (event) => {
+        const line = event.target.closest('.tg-msg');
+        if (!line || !messages.contains(line)) return;
+        openContextMenu(event, line);
+    });
+    document.addEventListener('click', (event) => {
+        if (!ctxMenu.contains(event.target)) hideContextMenu();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') hideContextMenu();
+    });
+    window.addEventListener('scroll', hideContextMenu, true);
+
+    ctxMenu.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-ctx-action]');
+        if (!button || !ctxTarget) return;
+        const action = button.dataset.ctxAction;
+        const line = ctxTarget;
+        const messageId = line.dataset.messageId;
+        hideContextMenu();
+        if (action === 'copy') {
+            const text = copyTextForMessage(line);
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch {
+                alert('Could not copy to clipboard.');
+            }
+            return;
+        }
+        if (action === 'edit') {
+            if (!canEditMessage(line)) return;
+            editingMessageId = messageId;
+            const body = ChatMedia.decodeEscapedText(line.dataset.body || '');
+            const parsed = ChatMedia.parseBody(body);
+            editInput.value = parsed.type === 'sticker' ? `sticker:${parsed.emoji}` : (parsed.text || body);
+            editModal.show();
+            setTimeout(() => editInput.focus(), 200);
+            return;
+        }
+        if (action === 'delete') {
+            if (!canDeleteMessage(line)) return;
+            if (!confirm('Delete this message?')) return;
+            try {
+                const response = await fetch(`/chat/${conversationId}/messages/${messageId}`, { method: 'DELETE' });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.error || 'Could not delete message.');
+                    return;
+                }
+                line.remove();
+            } catch {
+                alert('Could not delete message.');
+            }
+        }
+    });
+
+    document.getElementById('edit-message-save').addEventListener('click', async () => {
+        const body = editInput.value.trim();
+        if (!body || !editingMessageId) return;
+        try {
+            const response = await fetch(`/chat/${conversationId}/messages/${editingMessageId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ body }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                alert(data.error || 'Could not edit message.');
+                return;
+            }
+            editModal.hide();
+            const line = messages.querySelector(`[data-message-id="${editingMessageId}"]`);
+            if (line && data.message) refreshMessageBody(line, data.message.body);
+        } catch {
+            alert('Could not edit message.');
+        }
+    });
+
+    socket.on('message_deleted', (payload) => {
+        if (!payload?.id) return;
+        messages.querySelector(`[data-message-id="${payload.id}"]`)?.remove();
+    });
+    socket.on('message_updated', (payload) => {
+        if (!payload?.id) return;
+        const line = messages.querySelector(`[data-message-id="${payload.id}"]`);
+        if (line) refreshMessageBody(line, payload.body || '');
+    });
+
+    function sendChatBody(body) {
+        const text = (body || '').trim();
+        if (!text) return;
+        socket.emit('send_message', {
+            conversation_id: conversationId,
+            body: text,
+            storage_item_ids: [],
+        });
+    }
+
+    function insertEmoji(emoji) {
+        ChatMedia.pushRecent(emoji);
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
+        input.value = `${input.value.slice(0, start)}${emoji}${input.value.slice(end)}`;
+        input.focus();
+        const caret = start + emoji.length;
+        input.setSelectionRange(caret, caret);
+        updateComposerMode();
+    }
+
+    // Media panel (emoji / stickers / GIFs)
+    const tgApp = document.getElementById('tg-app');
+    const mediaBody = document.getElementById('media-body');
+    const mediaCats = document.getElementById('media-cats');
+    const mediaSearchInput = document.getElementById('media-search-input');
+    const toggleMediaBtn = document.getElementById('toggle-media-panel');
+    let mediaTab = 'emoji';
+    let emojiCategoryId = 'people';
+    let gifTimer = null;
+
+    function setMediaOpen(open) {
+        tgApp.classList.toggle('media-open', open);
+        toggleMediaBtn.classList.toggle('active', open);
+        toggleMediaBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) renderMediaPanel();
+    }
+
+    toggleMediaBtn.addEventListener('click', () => setMediaOpen(!tgApp.classList.contains('media-open')));
+    document.getElementById('media-panel-close')?.addEventListener('click', () => setMediaOpen(false));
+
+    document.querySelectorAll('[data-media-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            mediaTab = btn.dataset.mediaTab;
+            document.querySelectorAll('[data-media-tab]').forEach(tab => {
+                const active = tab === btn;
+                tab.classList.toggle('active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            mediaSearchInput.value = '';
+            renderMediaPanel();
+        });
+    });
+
+    const quickReactions = document.getElementById('quick-reactions');
+    ChatMedia.QUICK_REACTIONS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = emoji;
+        btn.title = emoji;
+        btn.addEventListener('click', () => {
+            if (mediaTab === 'stickers') sendChatBody(`sticker:${emoji}`);
+            else insertEmoji(emoji);
+        });
+        quickReactions.appendChild(btn);
+    });
+
+    function renderEmojiPanel(filter = '') {
+        mediaCats.hidden = false;
+        mediaCats.replaceChildren();
+        const categories = ChatMedia.EMOJI_CATEGORIES.map(cat => {
+            if (cat.id === 'recent') return { ...cat, emojis: ChatMedia.getRecent() };
+            return cat;
+        });
+        categories.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = cat.id === emojiCategoryId ? 'active' : '';
+            btn.title = cat.label;
+            btn.innerHTML = `<i class="bi ${cat.icon}" aria-hidden="true"></i>`;
+            btn.addEventListener('click', () => {
+                emojiCategoryId = cat.id;
+                renderMediaPanel();
+            });
+            mediaCats.appendChild(btn);
+        });
+
+        mediaBody.replaceChildren();
+        const q = filter.trim().toLowerCase();
+        let active = categories.find(cat => cat.id === emojiCategoryId) || categories[1];
+        let emojis = active.emojis.length ? active.emojis : categories[1].emojis;
+        let titleText = active.label;
+
+        if (q) {
+            titleText = 'Search results';
+            const labelHits = categories.filter(cat => cat.label.toLowerCase().includes(q));
+            if (labelHits.length) {
+                emojis = labelHits.flatMap(cat => cat.emojis);
+            } else {
+                emojis = categories.flatMap(cat => cat.emojis).filter(emoji => emoji.includes(filter));
+                if (!emojis.length) emojis = categories[1].emojis;
+            }
+            emojis = [...new Set(emojis)].slice(0, 200);
+        }
+
+        const title = document.createElement('div');
+        title.className = 'tg-emoji-section-title';
+        title.textContent = titleText;
+        mediaBody.appendChild(title);
+        const grid = document.createElement('div');
+        grid.className = 'tg-emoji-grid';
+        emojis.forEach(emoji => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = emoji;
+            button.addEventListener('click', () => insertEmoji(emoji));
+            grid.appendChild(button);
+        });
+        mediaBody.appendChild(grid);
+    }
+
+    function renderStickersPanel(filter = '') {
+        mediaCats.hidden = true;
+        mediaBody.replaceChildren();
+        const q = filter.trim().toLowerCase();
+        ChatMedia.STICKER_PACKS.forEach(pack => {
+            if (q && !pack.name.toLowerCase().includes(q) && !pack.stickers.some(s => s.includes(filter))) return;
+            const title = document.createElement('div');
+            title.className = 'tg-emoji-section-title';
+            title.textContent = pack.name;
+            mediaBody.appendChild(title);
+            const grid = document.createElement('div');
+            grid.className = 'tg-sticker-grid';
+            pack.stickers
+                .filter(sticker => !q || pack.name.toLowerCase().includes(q) || sticker.includes(filter))
+                .forEach(sticker => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.textContent = sticker;
+                    button.addEventListener('click', () => sendChatBody(`sticker:${sticker}`));
+                    grid.appendChild(button);
+                });
+            mediaBody.appendChild(grid);
+        });
+    }
+
+    async function renderGifsPanel(filter = '') {
+        mediaCats.hidden = true;
+        mediaBody.replaceChildren();
+        const loading = document.createElement('p');
+        loading.className = 'small text-body-secondary px-1';
+        loading.textContent = 'Loading GIFs…';
+        mediaBody.appendChild(loading);
+        try {
+            const response = await fetch(`/api/gifs?q=${encodeURIComponent(filter.trim())}`);
+            const data = await response.json();
+            mediaBody.replaceChildren();
+            const grid = document.createElement('div');
+            grid.className = 'tg-gif-grid';
+            (data.results || []).forEach(item => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.title = item.title || 'GIF';
+                const img = document.createElement('img');
+                img.src = item.preview || item.url;
+                img.alt = item.title || 'GIF';
+                img.loading = 'lazy';
+                button.appendChild(img);
+                button.addEventListener('click', () => {
+                    if (ChatMedia.isSafeGifUrl(item.url)) sendChatBody(`gif:${item.url}`);
+                });
+                grid.appendChild(button);
+            });
+            if (!(data.results || []).length) {
+                const empty = document.createElement('p');
+                empty.className = 'small text-body-secondary px-1';
+                empty.textContent = 'No GIFs found.';
+                mediaBody.appendChild(empty);
+            } else {
+                mediaBody.appendChild(grid);
+            }
+        } catch {
+            mediaBody.innerHTML = '<p class="small text-danger px-1 mb-0">Could not load GIFs.</p>';
+        }
+    }
+
+    function renderMediaPanel() {
+        const filter = mediaSearchInput.value || '';
+        if (mediaTab === 'emoji') renderEmojiPanel(filter);
+        else if (mediaTab === 'stickers') renderStickersPanel(filter);
+        else renderGifsPanel(filter);
+    }
+
+    mediaSearchInput.addEventListener('input', () => {
+        if (mediaTab === 'gifs') {
+            clearTimeout(gifTimer);
+            gifTimer = setTimeout(renderMediaPanel, 300);
+        } else {
+            renderMediaPanel();
+        }
+    });
+
+    // In-chat search
+    const chatHeader = document.getElementById('chat-header');
+    const chatSearchPanel = document.getElementById('chat-search-panel');
+    const chatSearchInput = document.getElementById('chat-search-input');
+    let searchTimer = null;
+
+    function closeChatSearch() {
+        chatHeader.classList.remove('searching');
+        chatSearchPanel.classList.remove('is-open');
+        chatSearchPanel.replaceChildren();
+        chatSearchInput.value = '';
+        document.querySelectorAll('.tg-msg.search-hit').forEach(el => el.classList.remove('search-hit'));
+    }
+
+    document.getElementById('chat-search-open').addEventListener('click', () => {
+        chatHeader.classList.add('searching');
+        chatSearchInput.focus();
+    });
+    document.getElementById('chat-search-close').addEventListener('click', closeChatSearch);
+
+    function previewSearchBody(body, filename) {
+        if (filename) return filename;
+        const parsed = ChatMedia.parseBody(body || '');
+        if (parsed.type === 'gif') return 'GIF';
+        if (parsed.type === 'sticker') return parsed.emoji;
+        return body || '';
+    }
+
+    async function runChatSearch(query) {
+        const q = query.trim();
+        document.querySelectorAll('.tg-msg.search-hit').forEach(el => el.classList.remove('search-hit'));
+        if (!q) {
+            chatSearchPanel.classList.remove('is-open');
+            chatSearchPanel.replaceChildren();
+            return;
+        }
+        const response = await fetch(`/chat/${conversationId}/search?q=${encodeURIComponent(q)}`);
+        const results = await response.json().catch(() => []);
+        chatSearchPanel.replaceChildren();
+        if (!results.length) {
+            const empty = document.createElement('p');
+            empty.className = 'small text-body-secondary mb-0 p-3';
+            empty.textContent = 'No messages found.';
+            chatSearchPanel.appendChild(empty);
+            chatSearchPanel.classList.add('is-open');
+            return;
+        }
+        results.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tg-search-hit';
+            const strong = document.createElement('strong');
+            strong.textContent = item.sender_name || 'User';
+            const span = document.createElement('span');
+            span.textContent = previewSearchBody(item.body, item.filename);
+            btn.append(strong, span);
+            btn.addEventListener('click', () => {
+                const target = messages.querySelector(`[data-message-id="${item.id}"]`);
+                document.querySelectorAll('.tg-msg.search-hit').forEach(el => el.classList.remove('search-hit'));
+                if (target) {
+                    target.classList.add('search-hit');
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            chatSearchPanel.appendChild(btn);
+        });
+        chatSearchPanel.classList.add('is-open');
+    }
+
+    chatSearchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => runChatSearch(chatSearchInput.value), 250);
+    });
+    chatSearchInput.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeChatSearch();
+    });
+
+    socket.on('connect', () => socket.emit('join_chat', { conversation_id: conversationId }));
+    socket.on('new_message', (message) => {
+        if (message.sender_id !== currentUserId && chatPrefs().sounds !== false && notificationSound) {
+            notificationSound.currentTime = 0;
+            notificationSound.play().catch(() => {});
+        }
+        appendMessage(message);
+    });
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        if (chatPrefs().sendEnter === false) {
+            event.preventDefault();
+        }
+    });
+
+    const messageForm = document.getElementById('message-form');
+    const sendBtn = document.getElementById('send-btn');
+    const voiceBtn = document.getElementById('voice-btn');
+    const recordingTime = document.getElementById('recording-time');
+
+    messageForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (messageForm.classList.contains('is-recording')) return;
+        const body = input.value.trim();
+        const storageItemIds = [...selectedAttachments.keys()];
+        if (!body && !storageItemIds.length) return;
+        socket.emit('send_message', {
+            conversation_id: conversationId,
+            body,
+            storage_item_ids: storageItemIds,
+        });
+        input.value = '';
+        selectedAttachments.clear();
+        renderAttachChips();
+        updateComposerMode();
+        if (chatPrefs().autoscroll !== false) scrollToLatest();
+    });
+
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let recordedChunks = [];
+    let recordingStartedAt = 0;
+    let recordingTimer = null;
+    let recordingMime = 'audio/webm';
+    let discardRecording = false;
+
+    function updateComposerMode() {
+        const hasText = Boolean(input.value.trim()) || selectedAttachments.size > 0;
+        const recording = messageForm.classList.contains('is-recording');
+        sendBtn.hidden = recording || !hasText;
+        voiceBtn.hidden = recording ? false : hasText;
+        if (recording) {
+            voiceBtn.innerHTML = '<i class="bi bi-send-fill" aria-hidden="true"></i>';
+            voiceBtn.title = 'Send voice message';
+            voiceBtn.setAttribute('aria-label', 'Send voice message');
+            voiceBtn.classList.add('is-recording');
+        } else {
+            voiceBtn.innerHTML = '<i class="bi bi-mic-fill" aria-hidden="true"></i>';
+            voiceBtn.title = 'Record voice message';
+            voiceBtn.setAttribute('aria-label', 'Record voice message');
+            voiceBtn.classList.remove('is-recording');
+        }
+    }
+
+    function stopRecordingTracks() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+    }
+
+    function clearRecordingTimer() {
+        if (recordingTimer) {
+            clearInterval(recordingTimer);
+            recordingTimer = null;
+        }
+    }
+
+    function resetRecordingUi() {
+        messageForm.classList.remove('is-recording');
+        clearRecordingTimer();
+        recordingTime.textContent = '0:00';
+        recordedChunks = [];
+        mediaRecorder = null;
+        stopRecordingTracks();
+        updateComposerMode();
+    }
+
+    async function uploadVoiceBlob(blob, filename) {
+        if (!blob || blob.size < 200) return;
+        const form = new FormData();
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const ext = (filename && filename.includes('.')) ? filename.split('.').pop() : 'webm';
+        const safeName = filename && !/^voice-message\./i.test(filename)
+            ? filename
+            : `voice-${stamp}.${ext}`;
+        form.append('audio', blob, safeName);
+        voiceBtn.disabled = true;
+        try {
+            const response = await fetch(`/chat/${conversationId}/voice`, {
+                method: 'POST',
+                body: form,
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                alert(data.error || 'Could not send voice message.');
+            }
+        } catch {
+            alert('Could not send voice message.');
+        } finally {
+            voiceBtn.disabled = false;
+            updateComposerMode();
+        }
+    }
+
+    function pickVoiceFileFallback() {
+        const insecure = window.isSecureContext === false;
+        const reason = insecure
+            ? 'Live mic recording needs HTTPS (or localhost). You can still send a voice note by choosing an audio file.'
+            : 'Live mic recording is unavailable here. You can still send a voice note by choosing an audio file.';
+        if (!window.confirm(`${reason}\n\nOpen audio picker?`)) return;
+        voiceFileInput.click();
+    }
+
+    async function startVoiceRecording() {
+        const canRecord = Boolean(navigator.mediaDevices?.getUserMedia) && Boolean(window.MediaRecorder);
+        if (!canRecord) {
+            pickVoiceFileFallback();
+            return;
+        }
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+            alert('Microphone permission is required to send voice messages.');
+            return;
+        }
+        recordedChunks = [];
+        const preferred = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/ogg;codecs=opus',
+            'audio/mp4',
+        ];
+        recordingMime = preferred.find(type => MediaRecorder.isTypeSupported(type)) || '';
+        try {
+            mediaRecorder = recordingMime
+                ? new MediaRecorder(mediaStream, { mimeType: recordingMime })
+                : new MediaRecorder(mediaStream);
+        } catch {
+            stopRecordingTracks();
+            pickVoiceFileFallback();
+            return;
+        }
+        recordingMime = mediaRecorder.mimeType || recordingMime || 'audio/webm';
+        mediaRecorder.addEventListener('dataavailable', event => {
+            if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+        });
+        mediaRecorder.addEventListener('stop', async () => {
+            const chunks = recordedChunks.slice();
+            const mime = recordingMime.split(';')[0] || 'audio/webm';
+            const shouldDiscard = discardRecording;
+            discardRecording = false;
+            resetRecordingUi();
+            if (shouldDiscard || !chunks.length) return;
+            const blob = new Blob(chunks, { type: mime });
+            const ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm';
+            await uploadVoiceBlob(blob, `voice.${ext}`);
+        });
+        mediaRecorder.start(250);
+        recordingStartedAt = Date.now();
+        messageForm.classList.add('is-recording');
+        updateComposerMode();
+        recordingTimer = setInterval(() => {
+            recordingTime.textContent = formatVoiceTime((Date.now() - recordingStartedAt) / 1000);
+        }, 250);
+    }
+
+    function cancelVoiceRecording() {
+        if (!mediaRecorder) {
+            resetRecordingUi();
+            return;
+        }
+        discardRecording = true;
+        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        else resetRecordingUi();
+    }
+
+    function finishVoiceRecording() {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+        mediaRecorder.stop();
+    }
+
+    const voiceFileInput = document.getElementById('voice-file-input');
+    voiceFileInput.addEventListener('change', async () => {
+        const file = voiceFileInput.files && voiceFileInput.files[0];
+        voiceFileInput.value = '';
+        if (!file) return;
+        await uploadVoiceBlob(file, file.name || 'voice-message.webm');
+    });
+
+    voiceBtn.addEventListener('click', () => {
+        if (messageForm.classList.contains('is-recording')) finishVoiceRecording();
+        else startVoiceRecording();
+    });
+    document.getElementById('voice-cancel').addEventListener('click', cancelVoiceRecording);
+    input.addEventListener('input', updateComposerMode);
+    updateComposerMode();
+
+    hydrateExistingBodies();
+    document.querySelectorAll('.file-preview-link').forEach(link => {
+        decorateAttachment(link);
+        bindFilePreview(link);
+        link.querySelectorAll('img').forEach(img => {
+            if (!img.complete) img.addEventListener('load', () => {
+                if (stickToBottom) scrollToLatest();
+            }, { once: true });
+        });
+    });
+    scrollToLatest();
+    requestAnimationFrame(() => scrollToLatest());
+    window.addEventListener('load', () => scrollToLatest());
+</script>
+{% endif %}
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+<script>
+    const chatSettingsKey = 'mezali-chat-settings';
+    const page = document.body;
+    const settings = Object.assign({
+        theme: 'default',
+        shape: 'rounded',
+        color: '',
+        sounds: true,
+        alerts: true,
+        showEmail: true,
+        readChecks: true,
+        timestamps: true,
+        textSize: 'medium',
+        wallpaper: 'default',
+        sendEnter: true,
+        reduceMotion: false,
+        autoscroll: true,
+        compact: false,
+        language: 'en',
+        scale: 100,
+    }, JSON.parse(localStorage.getItem(chatSettingsKey) || '{}'));
+    window.mezaliChatSettings = settings;
+
+    const settingsTitle = document.getElementById('chatSettingsTitle');
+    const settingsBack = document.getElementById('settings-back');
+    const themeSelect = document.getElementById('theme-select');
+    const bubbleStyle = document.getElementById('bubble-style');
+    const bubbleColor = document.getElementById('bubble-color');
+    const panelTitles = {
+        home: 'Settings',
+        account: 'My Account',
+        notifications: 'Notifications and Sounds',
+        privacy: 'Privacy and Security',
+        chat: 'Chat Settings',
+        advanced: 'Advanced',
+        language: 'Language',
+    };
+
+    function showSettingsPanel(name) {
+        document.querySelectorAll('[data-settings-panel]').forEach(panel => {
+            panel.classList.toggle('is-active', panel.dataset.settingsPanel === name);
+        });
+        settingsTitle.textContent = panelTitles[name] || 'Settings';
+        settingsBack.hidden = name === 'home';
+    }
+
+    function applyChatSettings() {
+        page.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+        if (settings.theme && settings.theme !== 'default') page.classList.add(`theme-${settings.theme}`);
+        if (settings.color) page.style.setProperty('--bubble-own', settings.color);
+        else page.style.removeProperty('--bubble-own');
+        page.style.setProperty('--bubble-radius', settings.shape === 'square' ? '2px' : settings.shape === 'soft' ? '8px' : '12px');
+
+        page.classList.remove('wallpaper-night', 'wallpaper-graphite', 'wallpaper-mint', 'wallpaper-sand', 'wallpaper-rose');
+        if (settings.wallpaper && settings.wallpaper !== 'default') page.classList.add(`wallpaper-${settings.wallpaper}`);
+
+        page.classList.remove('text-size-small', 'text-size-medium', 'text-size-large');
+        page.classList.add(`text-size-${settings.textSize || 'medium'}`);
+        page.classList.toggle('reduce-motion', Boolean(settings.reduceMotion));
+        page.classList.toggle('hide-timestamps', settings.timestamps === false);
+        page.classList.toggle('hide-read-checks', settings.readChecks === false);
+        page.classList.toggle('hide-peer-email', settings.showEmail === false);
+        page.classList.toggle('compact-chat-list', Boolean(settings.compact));
+
+        const scale = Number(settings.scale) || 100;
+        document.documentElement.style.fontSize = `${(16 * scale) / 100}px`;
+        const scaleLabel = document.getElementById('settings-scale-label');
+        if (scaleLabel) scaleLabel.textContent = `${scale}%`;
+
+        if (themeSelect) themeSelect.value = settings.theme || 'default';
+        if (bubbleStyle) bubbleStyle.value = settings.shape || 'rounded';
+        if (bubbleColor) bubbleColor.value = settings.color || '#effdde';
+        const defaultOn = {
+            sounds: true,
+            alerts: true,
+            showEmail: true,
+            readChecks: true,
+            timestamps: true,
+            sendEnter: true,
+            autoscroll: true,
+            reduceMotion: false,
+            compact: false,
+        };
+        Object.entries({
+            'settings-sounds': 'sounds',
+            'settings-alerts': 'alerts',
+            'settings-show-email': 'showEmail',
+            'settings-read-checks': 'readChecks',
+            'settings-timestamps': 'timestamps',
+            'settings-send-enter': 'sendEnter',
+            'settings-reduce-motion': 'reduceMotion',
+            'settings-autoscroll': 'autoscroll',
+            'settings-compact': 'compact',
+        }).forEach(([id, key]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.checked = settings[key] === undefined ? Boolean(defaultOn[key]) : Boolean(settings[key]);
+        });
+        const textSize = document.getElementById('settings-text-size');
+        if (textSize) textSize.value = settings.textSize || 'medium';
+        const language = document.getElementById('settings-language');
+        if (language) language.value = settings.language || 'en';
+        const langMeta = document.getElementById('settings-lang-meta');
+        if (langMeta) langMeta.textContent = (settings.language || 'en') === 'my' ? 'Myanmar' : 'English';
+        const scaleInput = document.getElementById('settings-scale');
+        if (scaleInput) scaleInput.value = String(scale);
+        document.querySelectorAll('[data-wallpaper]').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.wallpaper === (settings.wallpaper || 'default'));
+        });
+        if (typeof window.updateJumpLatestVisibility === 'function') {
+            window.updateJumpLatestVisibility();
+        }
+    }
+
+    function saveChatSettings() {
+        localStorage.setItem(chatSettingsKey, JSON.stringify(settings));
+        window.mezaliChatSettings = settings;
+        applyChatSettings();
+    }
+
+    document.querySelectorAll('[data-settings-open]').forEach(btn => {
+        btn.addEventListener('click', () => showSettingsPanel(btn.dataset.settingsOpen));
+    });
+    settingsBack?.addEventListener('click', () => showSettingsPanel('home'));
+    document.getElementById('chatSettings')?.addEventListener('hidden.bs.offcanvas', () => showSettingsPanel('home'));
+
+    themeSelect?.addEventListener('change', event => { settings.theme = event.target.value; saveChatSettings(); });
+    bubbleStyle?.addEventListener('change', event => { settings.shape = event.target.value; saveChatSettings(); });
+    bubbleColor?.addEventListener('input', event => { settings.color = event.target.value; saveChatSettings(); });
+    document.getElementById('settings-text-size')?.addEventListener('change', event => {
+        settings.textSize = event.target.value;
+        saveChatSettings();
+    });
+    document.getElementById('settings-language')?.addEventListener('change', event => {
+        settings.language = event.target.value;
+        saveChatSettings();
+    });
+    document.getElementById('settings-scale')?.addEventListener('input', event => {
+        settings.scale = Number(event.target.value);
+        saveChatSettings();
+    });
+    document.querySelectorAll('[data-wallpaper]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            settings.wallpaper = btn.dataset.wallpaper;
+            saveChatSettings();
+        });
+    });
+
+    const toggleBindings = [
+        ['settings-sounds', 'sounds'],
+        ['settings-alerts', 'alerts'],
+        ['settings-show-email', 'showEmail'],
+        ['settings-read-checks', 'readChecks'],
+        ['settings-timestamps', 'timestamps'],
+        ['settings-send-enter', 'sendEnter'],
+        ['settings-reduce-motion', 'reduceMotion'],
+        ['settings-autoscroll', 'autoscroll'],
+        ['settings-compact', 'compact'],
+    ];
+    toggleBindings.forEach(([id, key]) => {
+        document.getElementById(id)?.addEventListener('change', event => {
+            settings[key] = event.target.checked;
+            saveChatSettings();
+        });
+    });
+
+    document.getElementById('settings-test-sound')?.addEventListener('click', () => {
+        const audio = document.getElementById('message-notification');
+        if (!audio) return;
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+    });
+
+    document.getElementById('reset-chat-settings')?.addEventListener('click', () => {
+        ['theme', 'shape', 'color', 'textSize', 'wallpaper'].forEach(key => delete settings[key]);
+        settings.theme = 'default';
+        settings.shape = 'rounded';
+        settings.color = '';
+        settings.textSize = 'medium';
+        settings.wallpaper = 'default';
+        saveChatSettings();
+    });
+
+    applyChatSettings();
+</script>
 </body>
 </html>

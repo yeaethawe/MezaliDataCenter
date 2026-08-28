@@ -11,20 +11,134 @@
         .drop-zone.is-dragging { border-color: #0d6efd; background-color: #e7f1ff !important; }
         .folder-drop-target.is-file-over { outline: 3px dashed #0d6efd; background-color: #e7f1ff !important; }
         .file-type-icon { font-size: 2.5rem; line-height: 1; }
-        .file-card { cursor: context-menu; }
+        .file-card { cursor: grab; }
+        .file-card.dragging, .draggable-folder.dragging { opacity: 0.55; }
         #explorer-context-menu { position: fixed; z-index: 2000; min-width: 190px; }
+        .view-toggle .btn.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+        .explorer-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+        .explorer-grid.view-compact {
+            grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        }
+        .explorer-grid.view-detail {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        }
+        .explorer-item {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            background: #fff;
+            color: inherit;
+            text-decoration: none;
+            min-width: 0;
+            height: 100%;
+        }
+        .explorer-item:hover { border-color: #0d6efd; }
+        .explorer-item .item-visual {
+            display: grid;
+            place-items: center;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+        .explorer-item .item-name {
+            display: block;
+            text-align: center;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+        .explorer-grid.view-compact .explorer-item { padding: 0.55rem 0.4rem 0.45rem; }
+        .explorer-grid.view-compact .item-visual {
+            height: 48px;
+            margin-bottom: 0.35rem;
+            background: transparent;
+        }
+        .explorer-grid.view-compact .file-type-icon { font-size: 1.75rem; }
+        .explorer-grid.view-compact .item-name {
+            font-size: 0.72rem;
+            max-height: 2.4em;
+            overflow: hidden;
+        }
+        .explorer-grid.view-compact .item-meta,
+        .explorer-grid.view-compact .item-badge { display: none; }
+        .explorer-grid.view-detail .explorer-item { padding: 0; overflow: hidden; }
+        .explorer-grid.view-detail .item-visual {
+            height: 120px;
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+        .explorer-grid.view-detail .item-visual img,
+        .explorer-grid.view-detail .item-visual video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .explorer-grid.view-detail .file-type-icon { font-size: 2.35rem; }
+        .explorer-grid.view-detail .item-body { padding: 0.65rem 0.75rem 0.75rem; }
+        .explorer-grid.view-detail .item-name {
+            text-align: left;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .explorer-grid.view-detail .item-meta {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--bs-secondary-color);
+            margin-top: 0.15rem;
+        }
+        html[data-bs-theme="dark"] .explorer-item { background: #0b131c; }
+        html[data-bs-theme="dark"] .explorer-item .item-visual { background: #101a24; }
+        html[data-bs-theme="dark"] .explorer-grid.view-compact .item-visual { background: transparent; }
+        .explorer-grid.view-compact .detail-preview { display: none !important; }
+        .explorer-grid.view-detail .compact-only { display: none !important; }
+        .explorer-grid.view-compact .item-body { padding: 0; }
+        .upload-queue-item {
+            display: grid;
+            grid-template-columns: 64px 1fr auto;
+            gap: 0.75rem;
+            align-items: center;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            padding: 0.65rem;
+            margin-bottom: 0.5rem;
+            background: var(--bs-body-bg);
+        }
+        .upload-thumb {
+            width: 64px;
+            height: 64px;
+            border-radius: 0.35rem;
+            object-fit: cover;
+            background: #e9ecef;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            font-size: 1.5rem;
+            color: #6c757d;
+        }
+        .upload-thumb img, .upload-thumb video { width: 100%; height: 100%; object-fit: cover; }
+        .upload-queue-meta { min-width: 0; }
+        .upload-queue-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: flex-end; }
     </style>
     <title>File Explorer</title>
 </head>
 <body class="py-4 bg-body-tertiary" data-current-folder-id="{{ current_folder[0] if current_folder else '' }}">
 <main class="container">
     <header class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4">
-        <a href="{{ url_for('dashboard') }}" class="fs-4 text-decoration-none">Mezali Data Center</a>
+        <a href="{{ url_for('dashboard') }}" class="fs-4 text-decoration-none">Mezalions</a>
         <div class="d-flex gap-2"><a href="{{ url_for('chat_page') }}" class="btn btn-outline-primary">Chat</a><a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a></div>
     </header>
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div><h1 class="h3 mb-1">File Explorer</h1><p class="text-body-secondary mb-0">{{ (storage_usage / 1024 / 1024)|round(2) }} MB of {{ (storage_quota / 1024 / 1024 / 1024)|round(2) }} GB used</p></div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="btn-group view-toggle" role="group" aria-label="Explorer view mode">
+                <button type="button" class="btn btn-outline-secondary btn-sm active" id="view-compact" title="Compact icons" aria-pressed="true">
+                    <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Compact
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="view-detail" title="Detail with previews" aria-pressed="false">
+                    <i class="bi bi-card-image" aria-hidden="true"></i> Detail
+                </button>
+            </div>
+            <a href="{{ url_for('ide_page') }}" class="btn btn-primary"><i class="bi bi-code-slash me-1" aria-hidden="true"></i>Open IDE</a>
             <form action="{{ url_for('create_folder') }}" method="POST" class="input-group">
                 <input class="form-control" name="name" placeholder="New folder name" required>
                 <input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}">
@@ -32,27 +146,44 @@
             </form>
         </div>
     </div>
-    <nav class="mb-3" aria-label="Folder navigation"><a href="{{ url_for('file_explorer') }}" class="folder-drop-target text-decoration-none d-inline-block p-1 rounded" data-folder-id="">Root</a>{% if parent_folder %} <span class="text-body-secondary">/</span> <a href="{{ url_for('file_explorer', folder_id=parent_folder[0]) }}">{{ parent_folder[1] }}</a>{% endif %}{% if current_folder %} <span class="text-body-secondary">/</span> <strong>{{ current_folder[1] }}</strong>{% endif %}</nav>
-    <div class="row g-3">
+    <nav class="mb-3" aria-label="Folder navigation"><a href="{{ url_for('file_explorer') }}" class="folder-drop-target text-decoration-none d-inline-block p-1 rounded" data-folder-id="">Root</a>{% if parent_folder %} <span class="text-body-secondary">/</span> <a href="{{ url_for('file_explorer', folder_id=parent_folder[0]) }}" class="folder-drop-target text-decoration-none d-inline-block p-1 rounded" data-folder-id="{{ parent_folder[0] }}">{{ parent_folder[1] }}</a>{% endif %}{% if current_folder %} <span class="text-body-secondary">/</span> <strong>{{ current_folder[1] }}</strong>{% endif %}</nav>
+    <p class="small text-body-secondary mb-3">Drag files or folders onto a folder (or Root) to move them. You can also right-click → Move.</p>
+    <div id="explorer-grid" class="explorer-grid view-compact" data-view="compact">
         {% for folder in child_folders %}
-        <div class="col-sm-6 col-lg-3"><a href="{{ url_for('file_explorer', folder_id=folder[0]) }}" class="folder-drop-target draggable-folder text-decoration-none" draggable="true" data-folder-id="{{ folder[0] }}" data-folder-name="{{ folder[1] }}"><div class="border rounded bg-white p-3 h-100"><i class="bi bi-folder-fill file-type-icon text-warning d-block mb-2" aria-hidden="true"></i><strong>{{ folder[1] }}</strong><small class="d-block text-body-secondary">Drop files here</small></div></a></div>
+        <a href="{{ url_for('file_explorer', folder_id=folder[0]) }}" class="explorer-item folder-drop-target draggable-folder" draggable="true" data-folder-id="{{ folder[0] }}" data-folder-name="{{ folder[1] }}">
+            <div class="item-visual"><i class="bi bi-folder-fill file-type-icon text-warning" aria-hidden="true"></i></div>
+            <div class="item-body">
+                {% if folder[1]|lower == 'public' and not current_folder %}<span class="badge text-bg-info item-badge mb-1">Shared</span>{% endif %}
+                <span class="item-name">{{ folder[1] }}</span>
+                <small class="item-meta">{% if folder[1]|lower == 'public' and not current_folder %}Public share folder{% else %}Folder{% endif %}</small>
+            </div>
+        </a>
         {% endfor %}
         {% for item in files %}
-        <div class="col-sm-6 col-lg-4">
-            <article class="border rounded bg-white p-3 h-100 draggable-file file-card" draggable="true" data-file-id="{{ item[0] }}" data-file-name="{{ item[1] }}" data-file-mime="{{ item[2] }}" data-file-size="{{ item[3] }}" data-file-url="{{ url_for('preview_file', item_id=item[0]) }}" data-file-download="{{ url_for('download_file', item_id=item[0]) }}">
-                <div class="d-flex align-items-start justify-content-between gap-2">
-                    {% if item[2].startswith('image/') %}<i class="bi bi-file-earmark-image file-type-icon text-success" title="Image" aria-label="Image file"></i>
-                    {% elif item[2].startswith('video/') %}<i class="bi bi-file-earmark-play file-type-icon text-danger" title="Video" aria-label="Video file"></i>
-                    {% elif item[2].startswith('audio/') %}<i class="bi bi-file-earmark-music file-type-icon text-info" title="Audio" aria-label="Audio file"></i>
-                    {% elif item[2] == 'application/pdf' %}<i class="bi bi-file-earmark-pdf file-type-icon text-danger" title="PDF" aria-label="PDF file"></i>
-                    {% elif item[2] in ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'] %}<i class="bi bi-file-earmark-zip file-type-icon text-warning" title="Archive" aria-label="Archive file"></i>
-                    {% elif item[2].startswith('text/') or 'document' in item[2] or 'spreadsheet' in item[2] or 'presentation' in item[2] %}<i class="bi bi-file-earmark-text file-type-icon text-primary" title="Document" aria-label="Document file"></i>
-                    {% else %}<i class="bi bi-file-earmark file-type-icon text-secondary" title="File" aria-label="File"></i>{% endif %}
-                    <strong class="text-break text-end">{{ item[1] }}</strong>
-                </div>
-            </article>
-        </div>
-        {% else %}<div class="col-12"><p class="text-body-secondary">This folder is empty.</p></div>{% endfor %}
+        {% set editable = is_editable_file(item[1], item[2]) %}
+        {% set icon, color, label = file_type_icon(item[1], item[2]) %}
+        {% set is_image = item[2].startswith('image/') %}
+        {% set is_video = item[2].startswith('video/') %}
+        <article class="explorer-item draggable-file file-card" draggable="true" data-file-id="{{ item[0] }}" data-file-name="{{ item[1] }}" data-file-mime="{{ item[2] }}" data-file-size="{{ item[3] }}" data-file-editable="{{ '1' if editable else '0' }}" data-file-ide="{{ url_for('ide_page', item_id=item[0]) if editable else '' }}" data-file-url="{{ url_for('preview_file', item_id=item[0]) }}" data-file-download="{{ url_for('download_file', item_id=item[0]) }}">
+            <div class="item-visual">
+                {% if is_image %}
+                <img class="detail-preview" src="{{ url_for('preview_file', item_id=item[0]) }}" alt="{{ item[1] }}" loading="lazy">
+                <i class="bi {{ icon }} file-type-icon {{ color }} compact-only" title="{{ label }}" aria-hidden="true"></i>
+                {% elif is_video %}
+                <video class="detail-preview" src="{{ url_for('preview_file', item_id=item[0]) }}#t=0.1" muted preload="metadata" playsinline></video>
+                <i class="bi {{ icon }} file-type-icon {{ color }} compact-only" title="{{ label }}" aria-hidden="true"></i>
+                {% else %}
+                <i class="bi {{ icon }} file-type-icon {{ color }}" title="{{ label }}" aria-label="{{ label }} file"></i>
+                {% endif %}
+            </div>
+            <div class="item-body">
+                <span class="item-name" title="{{ item[1] }}">{{ item[1] }}</span>
+                <small class="item-meta">{{ label }}{% if item[3] >= 1024 * 1024 %} · {{ (item[3] / 1024 / 1024)|round(1) }} MB{% else %} · {{ (item[3] / 1024)|round(0)|int }} KB{% endif %}</small>
+            </div>
+        </article>
+        {% else %}
+        {% if not child_folders %}<p class="text-body-secondary mb-0" style="grid-column: 1 / -1;">This folder is empty.</p>{% endif %}
+        {% endfor %}
     </div>
     <section class="mt-4">
         <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#upload-panel" aria-expanded="false" aria-controls="upload-panel">
@@ -63,39 +194,113 @@
                 <div id="drop-zone" class="drop-zone rounded bg-light text-center p-4 mb-3" tabindex="0" role="button" aria-label="Drag and drop files here or choose files">
                     <i class="bi bi-cloud-arrow-up fs-1 text-primary" aria-hidden="true"></i>
                     <p class="mb-1"><strong>Drag and drop files here</strong></p>
-                    <p class="text-body-secondary mb-0">or choose a file below</p>
+                    <p class="text-body-secondary mb-0">Select multiple files, review them below, then upload</p>
                 </div>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-6"><label class="form-label" for="file">Choose files</label><input class="form-control" id="file" type="file" name="file" multiple></div>
                     <div class="col-md-4"><label class="form-label" for="upload-folder">Folder</label><select class="form-select" id="upload-folder" name="folder_id"><option value="">Root</option>{% for folder in folders %}<option value="{{ folder[0] }}" {% if current_folder and folder[0] == current_folder[0] %}selected{% endif %}>{{ folder[1] }}</option>{% endfor %}</select></div>
                     <input type="hidden" name="next" value="{{ url_for('file_explorer', folder_id=current_folder[0] if current_folder else None) }}">
-                    <div class="col-md-2"><button id="upload-button" class="btn btn-primary w-100" type="submit" disabled>Upload selected</button></div>
+                    <div class="col-md-2"><button id="upload-button" class="btn btn-primary w-100" type="submit" disabled>Upload</button></div>
                 </div>
-                <div id="upload-queue" class="mt-3" aria-live="polite"></div>
-                <p class="small text-body-secondary mb-0">Files larger than 500 MB are not allowed by the server.</p>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-1">
+                    <strong id="upload-queue-title" class="small text-body-secondary">No files selected</strong>
+                    <button type="button" class="btn btn-sm btn-outline-danger d-none" id="clear-upload-queue">Clear all</button>
+                </div>
+                <div id="upload-queue" aria-live="polite"></div>
+                <p class="small text-body-secondary mb-0">Review selected files, preview them, and remove any you do not want before uploading. Max 500 MB per file.</p>
             </form>
         </div>
     </section>
 </main>
 <div id="explorer-context-menu" class="dropdown-menu shadow" role="menu" aria-label="File explorer actions">
     <button class="dropdown-item" type="button" id="context-details"><i class="bi bi-info-circle me-2"></i>File details</button>
-    <button class="dropdown-item" type="button" id="context-edit"><i class="bi bi-pencil me-2"></i>Edit text file</button>
+    <button class="dropdown-item" type="button" id="context-edit"><i class="bi bi-code-slash me-2"></i>Open in IDE</button>
+    <button class="dropdown-item" type="button" id="context-move"><i class="bi bi-arrows-move me-2"></i>Move</button>
     <button class="dropdown-item" type="button" id="context-rename"><i class="bi bi-input-cursor-text me-2"></i>Rename file</button>
     <button class="dropdown-item text-danger" type="button" id="context-delete"><i class="bi bi-trash me-2"></i>Delete file</button>
     <button class="dropdown-item" type="button" id="context-folder-details"><i class="bi bi-info-circle me-2"></i>Folder details</button>
+    <button class="dropdown-item" type="button" id="context-folder-move"><i class="bi bi-arrows-move me-2"></i>Move folder</button>
     <button class="dropdown-item text-danger" type="button" id="context-folder-delete"><i class="bi bi-folder-x me-2"></i>Delete folder</button>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item" type="button" id="context-new-file"><i class="bi bi-file-earmark-plus me-2"></i>New file</button>
     <button class="dropdown-item" type="button" id="context-new-folder"><i class="bi bi-folder-plus me-2"></i>New folder</button>
 </div>
 <div class="modal fade" id="preview-modal" tabindex="-1" aria-labelledby="preview-title" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="h5 modal-title" id="preview-title">File preview</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="preview-body"></div><div class="modal-footer"><form id="edit-file-form" method="POST" class="d-none"><input type="hidden" name="content" id="edited-content"><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"><button class="btn btn-success" type="submit">Save changes</button></form><form id="delete-file-form" method="POST"><input type="hidden" name="next" value="{{ url_for('file_explorer', folder_id=current_folder[0] if current_folder else None) }}"><button class="btn btn-outline-danger" id="delete-file-button" type="submit">Delete file</button></form><a class="btn btn-primary" id="preview-download" href="#">Download</a><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>
-<div class="modal fade" id="create-file-modal" tabindex="-1" aria-labelledby="create-file-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_file') }}" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="create-file-title">Create new file</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="new-file-name">File name</label><input class="form-control" id="new-file-name" name="name" placeholder="notes.txt" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Create file</button></div></form></div></div></div>
+<div class="modal fade" id="create-file-modal" tabindex="-1" aria-labelledby="create-file-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_file') }}" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="create-file-title">Create new file</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="new-file-name">File name</label><input class="form-control" id="new-file-name" name="name" placeholder="main.py" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Create file</button></div></form></div></div></div>
 <div class="modal fade" id="create-folder-modal" tabindex="-1" aria-labelledby="create-folder-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_folder') }}" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="create-folder-title">Create new folder</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="new-folder-name">Folder name</label><input class="form-control" id="new-folder-name" name="name" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Create folder</button></div></form></div></div></div>
 <div class="modal fade" id="folder-details-modal" tabindex="-1" aria-labelledby="folder-details-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h2 class="h5 modal-title" id="folder-details-title">Folder details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="folder-details-body"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>
 <div class="modal fade" id="rename-file-modal" tabindex="-1" aria-labelledby="rename-file-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="rename-file-form" method="POST"><div class="modal-header"><h2 class="h5 modal-title" id="rename-file-title">Rename file</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><label class="form-label" for="rename-file-name">File name</label><input class="form-control" id="rename-file-name" name="name" required><input type="hidden" name="folder_id" value="{{ current_folder[0] if current_folder else '' }}"></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Save name</button></div></form></div></div></div>
+<div class="modal fade" id="move-item-modal" tabindex="-1" aria-labelledby="move-item-title" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="move-item-form" method="POST">
+                <div class="modal-header">
+                    <h2 class="h5 modal-title" id="move-item-title">Move item</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2" id="move-item-label"></p>
+                    <label class="form-label" for="move-destination">Destination folder</label>
+                    <select class="form-select" id="move-destination" required>
+                        <option value="">Root</option>
+                        {% for folder in folders %}
+                        <option value="{{ folder[0] }}">{{ folder[1] }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="current_folder_id" value="{{ current_folder[0] if current_folder else '' }}">
+                    <input type="hidden" name="folder_id" id="move-folder-id" value="">
+                    <input type="hidden" name="parent_id" id="move-parent-id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" type="submit">Move here</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="upload-preview-modal" tabindex="-1" aria-labelledby="upload-preview-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="h5 modal-title" id="upload-preview-title">Preview</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="upload-preview-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" id="upload-preview-remove">Remove from queue</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='theme.js') }}"></script>
 <script>
+    const explorerGrid = document.getElementById('explorer-grid');
+    const viewCompactBtn = document.getElementById('view-compact');
+    const viewDetailBtn = document.getElementById('view-detail');
+    const VIEW_KEY = 'mezalion-explorer-view';
+
+    function setExplorerView(mode) {
+        const view = mode === 'detail' ? 'detail' : 'compact';
+        explorerGrid.classList.toggle('view-compact', view === 'compact');
+        explorerGrid.classList.toggle('view-detail', view === 'detail');
+        explorerGrid.dataset.view = view;
+        viewCompactBtn.classList.toggle('active', view === 'compact');
+        viewDetailBtn.classList.toggle('active', view === 'detail');
+        viewCompactBtn.setAttribute('aria-pressed', view === 'compact' ? 'true' : 'false');
+        viewDetailBtn.setAttribute('aria-pressed', view === 'detail' ? 'true' : 'false');
+        localStorage.setItem(VIEW_KEY, view);
+        if (view === 'detail') {
+            explorerGrid.querySelectorAll('video.detail-preview').forEach(video => {
+                try { video.currentTime = 0.1; } catch (_) {}
+            });
+        }
+    }
+
+    viewCompactBtn.addEventListener('click', () => setExplorerView('compact'));
+    viewDetailBtn.addEventListener('click', () => setExplorerView('detail'));
+    setExplorerView(localStorage.getItem(VIEW_KEY) || 'compact');
     const uploadForm = document.getElementById('upload-form');
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file');
@@ -103,43 +308,210 @@
     const uploadNext = uploadForm.querySelector('input[name="next"]');
     const uploadButton = document.getElementById('upload-button');
     const uploadQueue = document.getElementById('upload-queue');
-    const dropMessage = dropZone.querySelector('p');
+    const uploadQueueTitle = document.getElementById('upload-queue-title');
+    const clearUploadQueue = document.getElementById('clear-upload-queue');
+    const dropMessage = dropZone.querySelector('p.text-body-secondary') || dropZone.querySelectorAll('p')[1];
     const maxUploadSize = 500 * 1024 * 1024;
+    const uploadPreviewModal = new bootstrap.Modal(document.getElementById('upload-preview-modal'));
+    const uploadPreviewBody = document.getElementById('upload-preview-body');
+    const uploadPreviewTitle = document.getElementById('upload-preview-title');
+    const uploadPreviewRemove = document.getElementById('upload-preview-remove');
     let queuedFiles = [];
+    let previewIndex = null;
+    let objectUrls = [];
 
     function formatSize(bytes) {
         if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
-        return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+        if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+        return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    function revokeObjectUrls() {
+        objectUrls.forEach(url => URL.revokeObjectURL(url));
+        objectUrls = [];
+    }
+
+    function makeObjectUrl(file) {
+        const url = URL.createObjectURL(file);
+        objectUrls.push(url);
+        return url;
+    }
+
+    function fileKey(file) {
+        return `${file.name}::${file.size}::${file.lastModified}`;
+    }
+
+    function thumbIconClass(file) {
+        const type = file.type || '';
+        if (type.startsWith('image/')) return 'bi-file-earmark-image';
+        if (type.startsWith('video/')) return 'bi-file-earmark-play';
+        if (type.startsWith('audio/')) return 'bi-file-earmark-music';
+        if (type === 'application/pdf') return 'bi-file-earmark-pdf';
+        if (type.startsWith('text/') || /\.(py|js|ts|html|css|json|md|txt)$/i.test(file.name)) return 'bi-file-earmark-code';
+        return 'bi-file-earmark';
     }
 
     function renderUploadQueue() {
+        revokeObjectUrls();
         uploadQueue.replaceChildren();
+        const count = queuedFiles.length;
+        uploadQueueTitle.textContent = count === 0
+            ? 'No files selected'
+            : `${count} file${count === 1 ? '' : 's'} ready to review`;
+        clearUploadQueue.classList.toggle('d-none', count === 0);
+
         queuedFiles.forEach((file, index) => {
             const row = document.createElement('div');
-            row.className = 'd-flex align-items-center gap-2 border rounded p-2 mb-2';
-            const label = document.createElement('span');
-            label.className = 'text-break flex-grow-1';
-            label.textContent = `${file.name} (${formatSize(file.size)})`;
-            const status = document.createElement('span');
-            status.className = file.size > maxUploadSize ? 'text-danger small' : 'text-body-secondary small';
+            row.className = 'upload-queue-item';
+            row.dataset.index = String(index);
+
+            const thumb = document.createElement('div');
+            thumb.className = 'upload-thumb';
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = makeObjectUrl(file);
+                img.alt = file.name;
+                thumb.appendChild(img);
+            } else if (file.type.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = makeObjectUrl(file);
+                video.muted = true;
+                video.playsInline = true;
+                thumb.appendChild(video);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = `bi ${thumbIconClass(file)}`;
+                icon.setAttribute('aria-hidden', 'true');
+                thumb.appendChild(icon);
+            }
+
+            const meta = document.createElement('div');
+            meta.className = 'upload-queue-meta';
+            const name = document.createElement('strong');
+            name.className = 'd-block text-break';
+            name.textContent = file.name;
+            const details = document.createElement('small');
+            details.className = 'text-body-secondary';
+            details.textContent = `${formatSize(file.size)}${file.type ? ` · ${file.type}` : ''}`;
+            const status = document.createElement('div');
+            status.className = `upload-status small ${file.size > maxUploadSize ? 'text-danger' : 'text-body-secondary'}`;
             status.textContent = file.size > maxUploadSize ? 'Too large: maximum is 500 MB' : 'Ready to upload';
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'btn btn-sm btn-outline-secondary';
-            remove.textContent = 'Remove';
-            remove.addEventListener('click', () => { queuedFiles.splice(index, 1); renderUploadQueue(); });
-            row.append(label, status, remove);
+            meta.append(name, details, status);
+
+            const actions = document.createElement('div');
+            actions.className = 'upload-queue-actions';
+            const viewBtn = document.createElement('button');
+            viewBtn.type = 'button';
+            viewBtn.className = 'btn btn-sm btn-outline-primary';
+            viewBtn.textContent = 'View';
+            viewBtn.addEventListener('click', () => openUploadPreview(index));
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-sm btn-outline-danger';
+            removeBtn.textContent = 'Remove';
+            removeBtn.addEventListener('click', () => removeQueuedFile(index));
+            actions.append(viewBtn, removeBtn);
+
+            row.append(thumb, meta, actions);
             uploadQueue.appendChild(row);
         });
+
         uploadButton.disabled = queuedFiles.length === 0 || queuedFiles.some(file => file.size > maxUploadSize);
+        uploadButton.textContent = queuedFiles.length > 1 ? `Upload ${queuedFiles.length} files` : 'Upload';
     }
 
-    function addFiles(files) {
-        queuedFiles = queuedFiles.concat([...files]);
+    function removeQueuedFile(index) {
+        queuedFiles.splice(index, 1);
+        if (previewIndex === index) {
+            uploadPreviewModal.hide();
+            previewIndex = null;
+        } else if (previewIndex != null && previewIndex > index) {
+            previewIndex -= 1;
+        }
         renderUploadQueue();
     }
 
-    fileInput.addEventListener('change', () => addFiles(fileInput.files));
+    function openUploadPreview(index) {
+        const file = queuedFiles[index];
+        if (!file) return;
+        previewIndex = index;
+        uploadPreviewTitle.textContent = file.name;
+        uploadPreviewBody.replaceChildren();
+        const url = URL.createObjectURL(file);
+        objectUrls.push(url);
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.className = 'img-fluid rounded';
+            img.src = url;
+            img.alt = file.name;
+            uploadPreviewBody.appendChild(img);
+        } else if (file.type.startsWith('video/')) {
+            const video = document.createElement('video');
+            video.className = 'w-100 rounded';
+            video.controls = true;
+            video.src = url;
+            uploadPreviewBody.appendChild(video);
+        } else if (file.type.startsWith('audio/')) {
+            const audio = document.createElement('audio');
+            audio.className = 'w-100';
+            audio.controls = true;
+            audio.src = url;
+            uploadPreviewBody.appendChild(audio);
+        } else if (file.type === 'application/pdf') {
+            const frame = document.createElement('iframe');
+            frame.className = 'w-100';
+            frame.style.height = '65vh';
+            frame.src = url;
+            frame.title = file.name;
+            uploadPreviewBody.appendChild(frame);
+        } else if (file.type.startsWith('text/') || /\.(py|js|ts|html|css|json|md|txt|csv|xml|yml|yaml)$/i.test(file.name)) {
+            const pre = document.createElement('pre');
+            pre.className = 'border rounded p-3 bg-body-tertiary small mb-0';
+            pre.style.maxHeight = '65vh';
+            pre.style.overflow = 'auto';
+            pre.textContent = 'Loading preview…';
+            uploadPreviewBody.appendChild(pre);
+            file.text().then(text => {
+                pre.textContent = text.slice(0, 100000) || '(Empty file)';
+            }).catch(() => {
+                pre.textContent = 'Could not preview this text file.';
+            });
+        } else {
+            const note = document.createElement('p');
+            note.className = 'text-body-secondary mb-0';
+            note.textContent = `No preview for this type (${file.type || 'unknown'}). You can still upload it or remove it from the queue.`;
+            uploadPreviewBody.appendChild(note);
+        }
+        uploadPreviewModal.show();
+    }
+
+    function addFiles(fileList) {
+        const incoming = [...fileList];
+        const existing = new Set(queuedFiles.map(fileKey));
+        incoming.forEach(file => {
+            const key = fileKey(file);
+            if (!existing.has(key)) {
+                queuedFiles.push(file);
+                existing.add(key);
+            }
+        });
+        renderUploadQueue();
+        fileInput.value = '';
+    }
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files?.length) addFiles(fileInput.files);
+    });
+    clearUploadQueue.addEventListener('click', () => {
+        queuedFiles = [];
+        previewIndex = null;
+        renderUploadQueue();
+    });
+    uploadPreviewRemove.addEventListener('click', () => {
+        if (previewIndex == null) return;
+        removeQueuedFile(previewIndex);
+        uploadPreviewModal.hide();
+    });
     ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, event => {
         event.preventDefault();
         dropZone.classList.add('is-dragging');
@@ -155,44 +527,65 @@
             fileInput.click();
         }
     });
-    dropZone.addEventListener('drop', async event => {
+    dropZone.addEventListener('drop', event => {
         addFiles(event.dataTransfer.files);
-        dropMessage.textContent = 'Files queued. Review the list, then click Upload selected.';
+        if (dropMessage) dropMessage.textContent = 'Files queued below. Preview or remove any before uploading.';
     });
 
     uploadForm.addEventListener('submit', event => {
         event.preventDefault();
         if (!queuedFiles.length || queuedFiles.some(file => file.size > maxUploadSize)) return;
         uploadButton.disabled = true;
-        let completed = 0;
-        const rows = [...uploadQueue.children];
+        clearUploadQueue.disabled = true;
+        const filesToUpload = [...queuedFiles];
         const uploadNextFile = index => {
-            if (index >= queuedFiles.length) { window.location.reload(); return; }
-            const file = queuedFiles[index];
+            if (index >= filesToUpload.length) {
+                window.location.reload();
+                return;
+            }
+            const file = filesToUpload[index];
+            const row = uploadQueue.children[index];
+            const status = row?.querySelector('.upload-status');
+            const actions = row?.querySelector('.upload-queue-actions');
+            if (actions) actions.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
             const formData = new FormData();
             formData.append('file', file);
             formData.append('folder_id', uploadFolder.value);
             formData.append('next', uploadNext.value);
             const request = new XMLHttpRequest();
-            const status = rows[index].children[1];
-            status.className = 'text-primary small';
-            status.textContent = 'Uploading 0%';
+            if (status) {
+                status.className = 'upload-status small text-primary';
+                status.textContent = 'Uploading 0%';
+            }
             request.upload.addEventListener('progress', progress => {
-                if (progress.lengthComputable) status.textContent = `Uploading ${Math.round(progress.loaded / progress.total * 100)}%`;
+                if (status && progress.lengthComputable) {
+                    status.textContent = `Uploading ${Math.round(progress.loaded / progress.total * 100)}%`;
+                }
             });
             request.addEventListener('load', () => {
                 if (request.status >= 200 && request.status < 400) {
-                    completed += 1;
-                    status.className = 'text-success small';
-                    status.textContent = 'Uploaded';
+                    if (status) {
+                        status.className = 'upload-status small text-success';
+                        status.textContent = 'Uploaded';
+                    }
                     uploadNextFile(index + 1);
                 } else {
-                    status.className = 'text-danger small';
-                    status.textContent = request.status === 413 ? 'Rejected: maximum is 500 MB' : 'Upload failed';
+                    if (status) {
+                        status.className = 'upload-status small text-danger';
+                        status.textContent = request.status === 413 ? 'Rejected: maximum is 500 MB' : 'Upload failed';
+                    }
                     uploadButton.disabled = false;
+                    clearUploadQueue.disabled = false;
                 }
             });
-            request.addEventListener('error', () => { status.className = 'text-danger small'; status.textContent = 'Upload failed'; uploadButton.disabled = false; });
+            request.addEventListener('error', () => {
+                if (status) {
+                    status.className = 'upload-status small text-danger';
+                    status.textContent = 'Upload failed';
+                }
+                uploadButton.disabled = false;
+                clearUploadQueue.disabled = false;
+            });
             request.open('POST', uploadForm.action);
             request.send(formData);
         };
@@ -200,65 +593,91 @@
     });
 
     function moveFileToFolder(fileId, fileName, folderId) {
-        const destination = folderId ? 'that folder' : 'the root folder';
+        const destination = folderId ? 'that folder' : 'Root';
         if (!window.confirm(`Move "${fileName}" to ${destination}?`)) return;
         const formData = new FormData();
-        formData.append('folder_id', folderId);
-        formData.append('current_folder_id', document.body.dataset.currentFolderId);
-        fetch(`{{ url_for('file_explorer') }}`.replace('/files', `/files/${fileId}/move`), { method: 'POST', body: formData })
+        formData.append('folder_id', folderId == null ? '' : String(folderId));
+        formData.append('current_folder_id', document.body.dataset.currentFolderId || '');
+        fetch(`/files/${fileId}/move`, { method: 'POST', body: formData })
             .then(response => { if (!response.ok) throw new Error('The file could not be moved.'); window.location.reload(); })
             .catch(error => window.alert(error.message));
     }
 
     function moveFolderToFolder(folderId, folderName, parentId) {
-        const destination = parentId ? 'that folder' : 'the root folder';
+        if (parentId != null && String(parentId) === String(folderId)) {
+            window.alert('Cannot move a folder into itself.');
+            return;
+        }
+        const destination = parentId ? 'that folder' : 'Root';
         if (!window.confirm(`Move folder "${folderName}" to ${destination}?`)) return;
         const formData = new FormData();
-        formData.append('parent_id', parentId);
-        formData.append('current_folder_id', document.body.dataset.currentFolderId);
+        formData.append('parent_id', parentId == null ? '' : String(parentId));
+        formData.append('current_folder_id', document.body.dataset.currentFolderId || '');
         fetch(`/files/folders/${folderId}/move`, { method: 'POST', body: formData })
             .then(response => { if (!response.ok) throw new Error('The folder could not be moved there.'); window.location.reload(); })
             .catch(error => window.alert(error.message));
     }
 
+    function parseExplorerDrag(event) {
+        const raw = event.dataTransfer.getData('text/plain') || '';
+        if (raw.startsWith('mezalion-move:')) {
+            try { return JSON.parse(raw.slice('mezalion-move:'.length)); } catch (_) { return null; }
+        }
+        const fileId = event.dataTransfer.getData('application/x-storage-file-id');
+        if (fileId) return { type: 'file', id: fileId, name: event.dataTransfer.getData('text/plain') };
+        const folderId = event.dataTransfer.getData('application/x-storage-folder-id');
+        if (folderId) return { type: 'folder', id: folderId, name: event.dataTransfer.getData('text/plain') };
+        return null;
+    }
+
+    function isExplorerDrag(event) {
+        const types = [...(event.dataTransfer.types || [])];
+        return types.includes('text/plain') || types.includes('application/x-storage-file-id') || types.includes('application/x-storage-folder-id');
+    }
+
     document.querySelectorAll('.draggable-file').forEach(fileCard => {
         fileCard.addEventListener('dragstart', event => {
+            fileCard.classList.add('dragging');
+            const payload = { type: 'file', id: fileCard.dataset.fileId, name: fileCard.dataset.fileName };
             event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('application/x-storage-file-id', fileCard.dataset.fileId);
-            event.dataTransfer.setData('text/plain', fileCard.dataset.fileName);
+            event.dataTransfer.setData('application/x-storage-file-id', payload.id);
+            event.dataTransfer.setData('text/plain', `mezalion-move:${JSON.stringify(payload)}`);
         });
+        fileCard.addEventListener('dragend', () => fileCard.classList.remove('dragging'));
     });
     document.querySelectorAll('.draggable-folder').forEach(folder => {
         folder.addEventListener('dragstart', event => {
+            folder.classList.add('dragging');
+            const payload = { type: 'folder', id: folder.dataset.folderId, name: folder.dataset.folderName };
             event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('application/x-storage-folder-id', folder.dataset.folderId);
-            event.dataTransfer.setData('text/plain', folder.dataset.folderName);
+            event.dataTransfer.setData('application/x-storage-folder-id', payload.id);
+            event.dataTransfer.setData('text/plain', `mezalion-move:${JSON.stringify(payload)}`);
         });
-        folder.addEventListener('click', event => {
-            if (event.detail === 0) return;
-        });
+        folder.addEventListener('dragend', () => folder.classList.remove('dragging'));
     });
     document.querySelectorAll('.folder-drop-target').forEach(folderTarget => {
         folderTarget.addEventListener('dragover', event => {
-            const isFile = event.dataTransfer.types.includes('application/x-storage-file-id');
-            const isFolder = event.dataTransfer.types.includes('application/x-storage-folder-id');
-            if (!isFile && !isFolder) return;
+            if (!isExplorerDrag(event)) return;
             event.preventDefault();
+            event.stopPropagation();
             event.dataTransfer.dropEffect = 'move';
             folderTarget.classList.add('is-file-over');
         });
-        folderTarget.addEventListener('dragleave', () => folderTarget.classList.remove('is-file-over'));
+        folderTarget.addEventListener('dragleave', event => {
+            if (!folderTarget.contains(event.relatedTarget)) folderTarget.classList.remove('is-file-over');
+        });
         folderTarget.addEventListener('drop', event => {
-            const isFile = event.dataTransfer.types.includes('application/x-storage-file-id');
-            const isFolder = event.dataTransfer.types.includes('application/x-storage-folder-id');
-            if (!isFile && !isFolder) return;
+            if (!isExplorerDrag(event)) return;
             event.preventDefault();
+            event.stopPropagation();
             folderTarget.classList.remove('is-file-over');
+            const payload = parseExplorerDrag(event);
+            if (!payload) return;
             const targetFolderId = folderTarget.dataset.folderId || null;
-            if (isFolder) {
-                moveFolderToFolder(event.dataTransfer.getData('application/x-storage-folder-id'), event.dataTransfer.getData('text/plain'), targetFolderId);
+            if (payload.type === 'folder') {
+                moveFolderToFolder(payload.id, payload.name, targetFolderId);
             } else {
-                moveFileToFolder(event.dataTransfer.getData('application/x-storage-file-id'), event.dataTransfer.getData('text/plain'), targetFolderId);
+                moveFileToFolder(payload.id, payload.name, targetFolderId);
             }
         });
     });
@@ -284,9 +703,11 @@
         selectedFolderCard = folderCard;
         document.getElementById('context-details').classList.toggle('d-none', !fileCard);
         document.getElementById('context-delete').classList.toggle('d-none', !fileCard);
-        document.getElementById('context-edit').classList.toggle('d-none', !fileCard || !fileCard.dataset.fileMime.startsWith('text/'));
+        document.getElementById('context-edit').classList.toggle('d-none', !fileCard || fileCard.dataset.fileEditable !== '1');
+        document.getElementById('context-move').classList.toggle('d-none', !fileCard);
         document.getElementById('context-rename').classList.toggle('d-none', !fileCard);
         document.getElementById('context-folder-details').classList.toggle('d-none', !folderCard);
+        document.getElementById('context-folder-move').classList.toggle('d-none', !folderCard);
         document.getElementById('context-folder-delete').classList.toggle('d-none', !folderCard);
         explorerContextMenu.style.display = 'block';
         explorerContextMenu.style.left = `${Math.min(event.clientX, window.innerWidth - explorerContextMenu.offsetWidth - 8)}px`;
@@ -308,15 +729,16 @@
         const sizeText = size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(2)} MB` : `${(size / 1024).toFixed(1)} KB`;
         details.textContent = `File name: ${name} | Type: ${mime} | Size: ${sizeText}`;
         body.appendChild(details);
-        if (mime.startsWith('text/')) {
-            const editor = document.createElement('textarea');
-            editor.className = 'form-control font-monospace';
-            editor.rows = 18;
-            editor.setAttribute('aria-label', `Edit ${name}`);
-            editor.placeholder = 'This file is empty.';
-            body.appendChild(editor);
-            fetch(fileCard.dataset.fileUrl).then(response => response.text()).then(content => { editor.value = content; });
-            editFileForm.classList.remove('d-none');
+        if (fileCard.dataset.fileEditable === '1') {
+            const note = document.createElement('p');
+            note.className = 'text-body-secondary';
+            note.textContent = 'This is a code/text file. Open it in the Mezalion IDE for syntax highlighting, tabs, and Ctrl+S save.';
+            body.appendChild(note);
+            const openIde = document.createElement('a');
+            openIde.className = 'btn btn-primary';
+            openIde.href = fileCard.dataset.fileIde;
+            openIde.innerHTML = '<i class="bi bi-code-slash me-1" aria-hidden="true"></i>Open in IDE';
+            body.appendChild(openIde);
         } else if (mime.startsWith('image/')) {
             const image = document.createElement('img'); image.className = 'img-fluid rounded'; image.src = fileCard.dataset.fileUrl; image.alt = name; body.appendChild(image);
         } else if (mime.startsWith('video/')) {
@@ -329,15 +751,68 @@
         previewModal.show();
     }
 
-    document.querySelectorAll('.file-card').forEach(fileCard => fileCard.addEventListener('contextmenu', event => showExplorerContextMenu(event, fileCard)));
+    document.querySelectorAll('.file-card').forEach(fileCard => {
+        fileCard.addEventListener('contextmenu', event => showExplorerContextMenu(event, fileCard));
+        fileCard.title = fileCard.dataset.fileIde
+            ? 'Drag to a folder to move · Double-click to open in IDE · Right-click for more'
+            : 'Drag to a folder to move · Right-click for more';
+        if (fileCard.dataset.fileIde) {
+            fileCard.addEventListener('dblclick', () => { window.location.href = fileCard.dataset.fileIde; });
+        }
+    });
     document.querySelectorAll('.draggable-folder').forEach(folderCard => folderCard.addEventListener('contextmenu', event => showExplorerContextMenu(event, null, folderCard)));
     document.querySelector('main').addEventListener('contextmenu', event => {
         if (!event.target.closest('.file-card') && !event.target.closest('a, button, input, select, form')) showExplorerContextMenu(event);
     });
+
+    function openMoveModal(kind, id, name) {
+        const form = document.getElementById('move-item-form');
+        const destination = document.getElementById('move-destination');
+        const folderField = document.getElementById('move-folder-id');
+        const parentField = document.getElementById('move-parent-id');
+        document.getElementById('move-item-title').textContent = kind === 'folder' ? 'Move folder' : 'Move file';
+        document.getElementById('move-item-label').textContent = `Moving: ${name}`;
+        [...destination.options].forEach(option => {
+            option.hidden = kind === 'folder' && option.value && option.value === String(id);
+            option.disabled = option.hidden;
+        });
+        destination.value = '';
+        if (kind === 'file') {
+            form.action = `/files/${id}/move`;
+            folderField.disabled = false;
+            parentField.disabled = true;
+            folderField.name = 'folder_id';
+            parentField.name = '';
+        } else {
+            form.action = `/files/folders/${id}/move`;
+            folderField.disabled = true;
+            parentField.disabled = false;
+            parentField.name = 'parent_id';
+            folderField.name = '';
+        }
+        const syncDestination = () => {
+            if (kind === 'file') folderField.value = destination.value;
+            else parentField.value = destination.value;
+        };
+        destination.onchange = syncDestination;
+        syncDestination();
+        new bootstrap.Modal(document.getElementById('move-item-modal')).show();
+    }
+
     explorerContextMenu.addEventListener('click', event => {
         const action = event.target.closest('button')?.id;
         if (action === 'context-details' && selectedFileCard) openFileDetails(selectedFileCard);
-        if (action === 'context-edit' && selectedFileCard) openFileDetails(selectedFileCard);
+        if (action === 'context-edit' && selectedFileCard?.dataset.fileIde) {
+            window.location.href = selectedFileCard.dataset.fileIde;
+            hideExplorerContextMenu();
+            return;
+        }
+        if (action === 'context-move' && selectedFileCard) {
+            openMoveModal('file', selectedFileCard.dataset.fileId, selectedFileCard.dataset.fileName);
+        }
+        if (action === 'context-folder-move' && selectedFolderCard) {
+            openMoveModal('folder', selectedFolderCard.dataset.folderId, selectedFolderCard.dataset.folderName);
+        }
         if (action === 'context-rename' && selectedFileCard) {
             const renameForm = document.getElementById('rename-file-form');
             renameForm.action = `/files/${selectedFileCard.dataset.fileId}/rename`;

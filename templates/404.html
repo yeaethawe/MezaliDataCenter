@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Oxanium:wght@500;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='intro.css') }}" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='mezalion-icon.png') }}">
+    <title>Page not found · Mezalion</title>
+    <style>
+        .error-shell {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: grid;
+            place-items: center;
+            padding: 2rem 1.25rem;
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 20%, rgba(46, 196, 238, 0.16), transparent 48%),
+                #070c12;
+        }
+        .error-shell img {
+            width: 88px;
+            height: 88px;
+            border-radius: 18px;
+            margin-bottom: 1.25rem;
+        }
+        .error-code {
+            margin: 0;
+            font-family: "Oxanium", sans-serif;
+            font-size: clamp(3.5rem, 12vw, 6rem);
+            letter-spacing: 0.12em;
+            color: #2ec4ee;
+            line-height: 1;
+        }
+        .error-shell h1 {
+            margin: 0.6rem 0 0.75rem;
+            font-family: "Oxanium", sans-serif;
+            font-size: clamp(1.4rem, 3vw, 1.9rem);
+            letter-spacing: 0.06em;
+        }
+        .error-shell p {
+            margin: 0 auto 1.5rem;
+            max-width: 28rem;
+            color: #9bb4c2;
+        }
+        .error-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+    </style>
+</head>
+<body class="intro-body">
+    <main class="error-shell">
+        <div>
+            <img src="{{ url_for('static', filename='mezalion-icon.png') }}" alt="">
+            <p class="error-code">404</p>
+            <h1>Page not found</h1>
+            <p>This path is not on the Mezalion network. It may have moved, or the link may be incomplete.</p>
+            <div class="error-actions">
+                <a class="intro-cta" href="{{ url_for('main_route') }}">Go home</a>
+                {% if session.get("user_id") or session.get("user") %}
+                <a class="intro-cta intro-cta-quiet" href="{{ url_for('dashboard') }}">Open dashboard</a>
+                {% else %}
+                <a class="intro-cta intro-cta-quiet" href="{{ url_for('login_user_page') }}">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>

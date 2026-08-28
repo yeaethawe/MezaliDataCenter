@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ profile[1] }} · Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
+    <style>
+        :root {
+            --profile-bg: #0e1621;
+            --profile-card: #17212b;
+            --profile-border: #2a4250;
+            --profile-text: #eaf6fb;
+            --profile-muted: #9bb4c2;
+            --profile-accent: #2ec4ee;
+        }
+        html[data-bs-theme="light"] {
+            --profile-bg: #e8eef3;
+            --profile-card: #ffffff;
+            --profile-border: #d5dde5;
+            --profile-text: #12202b;
+            --profile-muted: #5f7383;
+            --profile-accent: #087f8c;
+        }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(46, 196, 238, 0.12), transparent 40%),
+                radial-gradient(circle at 85% 90%, rgba(46, 196, 238, 0.08), transparent 35%),
+                var(--profile-bg);
+            color: var(--profile-text);
+        }
+        .profile-shell {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 1.25rem;
+        }
+        .profile-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+        .profile-top a {
+            color: var(--profile-muted);
+            text-decoration: none;
+        }
+        .profile-top a:hover { color: var(--profile-accent); }
+        .profile-card {
+            background: var(--profile-card);
+            border: 1px solid var(--profile-border);
+            border-radius: 18px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .profile-avatar {
+            width: 112px;
+            height: 112px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1rem;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #6ab2f2, #3390ec);
+            color: #fff;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .profile-name {
+            font-size: 1.45rem;
+            font-weight: 700;
+            margin: 0 0 0.25rem;
+        }
+        .profile-email {
+            color: var(--profile-muted);
+            margin-bottom: 1.25rem;
+        }
+        .profile-actions {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .profile-actions .btn-primary {
+            background: var(--profile-accent);
+            border-color: var(--profile-accent);
+            color: #061018;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-shell">
+        <div class="profile-top">
+            <a href="{{ back_url }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        </div>
+        <section class="profile-card">
+            <div class="profile-avatar" aria-hidden="true">
+                {% if profile[3] %}
+                <img src="{{ url_for('profile_picture', user_id=profile[0]) }}" alt="">
+                {% else %}
+                {{ (profile[1] or '?')[:1]|upper }}
+                {% endif %}
+            </div>
+            <h1 class="profile-name">{{ profile[1] }}</h1>
+            <p class="profile-email">{{ profile[2] }}</p>
+            <div class="profile-actions">
+                {% if can_chat %}
+                <a class="btn btn-primary" href="{{ url_for('chat_page', user_id=profile[0]) }}">
+                    <i class="bi bi-chat-dots" aria-hidden="true"></i> Message
+                </a>
+                {% endif %}
+                <a class="btn btn-outline-secondary" href="{{ back_url }}">Close</a>
+            </div>
+        </section>
+    </div>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>

@@ -1,43 +1,284 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-       <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Oxanium:wght@500;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
     <style>
-        #dashboard-page.dark-mode .bg-white { background-color: #212529 !important; color: #f8f9fa; }
-        #dashboard-page.dark-mode .table { --bs-table-color: #f8f9fa; --bs-table-bg: #212529; }
+        #dashboard-page { font-family: "Figtree", sans-serif; }
+        #dashboard-page h1, #dashboard-page h2, #dashboard-page h3, #dashboard-page .fs-4 {
+            font-family: "Oxanium", sans-serif;
+            letter-spacing: 0.04em;
+        }
+        #dashboard-page .fs-4 {
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-weight: 700;
+        }
+        #dashboard-page.dark-mode { color: #eaf6fb; }
+        #dashboard-page.dark-mode .bg-white,
+        #dashboard-page.dark-mode .modal-content { background-color: #0b131c !important; color: #eaf6fb; }
+        #dashboard-page.dark-mode .table { --bs-table-color: #eaf6fb; --bs-table-bg: #0b131c; }
         #dashboard-page.dark-mode .border-bottom,
-        #dashboard-page.dark-mode .border { border-color: #495057 !important; }
+        #dashboard-page.dark-mode .border { border-color: #2a4250 !important; }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem 1rem;
+            align-items: start;
+        }
+        .dashboard-welcome,
+        .dashboard-storage { grid-column: 1 / -1; }
+        .dashboard-notification {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #2a4250;
+        }
+        .dashboard-notification:last-child { border-bottom: 0; padding-bottom: 0; }
+        .dashboard-notification a { color: #7fe3ff; text-decoration: none; }
+        .notification-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.25rem;
+            height: 1.25rem;
+            margin-left: 0.35rem;
+            padding: 0 0.35rem;
+            border-radius: 999px;
+            background: #2ec4ee;
+            color: #061018;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .dashboard-welcome {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem 1rem;
+            flex-wrap: wrap;
+        }
+        .dashboard-welcome p { margin-bottom: 0; }
+        .dashboard-panel h2 { margin-bottom: 0.35rem; }
+        .dashboard-panel p { margin-bottom: 0.5rem; }
+        #dashboard-page.dark-mode .dashboard-panel {
+            background: #0b131c;
+            border-color: #2a4250 !important;
+        }
+        #dashboard-page.dark-mode .dashboard-panel p { color: #c5dce6; }
+        .dashboard-tabs {
+            border-bottom: 1px solid #2a4250;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+        .dashboard-tabs .nav-link {
+            color: #c5dce6;
+            border: 1px solid transparent;
+            border-radius: 0.5rem 0.5rem 0 0;
+            padding: 0.55rem 0.9rem;
+        }
+        .dashboard-tabs .nav-link:hover { color: #7fe3ff; }
+        .dashboard-tabs .nav-link.active {
+            color: #061018;
+            background: #2ec4ee;
+            border-color: #2ec4ee;
+            font-weight: 600;
+        }
+        .dashboard-tab-pane { padding-top: 1rem; }
+        @media (max-width: 767.98px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
-    <title>Mezali Data Center</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='mezalion-icon.png') }}">
+    <title>Mezalion</title>
 </head>
-<body class="align-items-center py-4 bg-body-tertiary" id="dashboard-page">
-    <div class="container"> 
-        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom"> 
-            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none"> 
-            <svg class="bi me-2" width="40" height="32" aria-hidden="true">
-                <use xlink:href="#bootstrap"></use>
-            </svg>
-                <span class="fs-4">Mezali Data Center</span>
+<body class="align-items-center py-3 bg-body-tertiary dark-mode" id="dashboard-page">
+    <div class="container">
+        <header class="d-flex flex-wrap justify-content-center py-2 mb-3 border-bottom">
+            <a href="/" class="d-flex align-items-center mb-2 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+                <img class="me-2" src="{{ url_for('static', filename='mezalion-icon.png') }}" alt="" width="40" height="40">
+                <span class="fs-4">Mezalion</span>
             </a>
             <ul class="nav nav-pills">
-                <li class="nav-item"><a href="/users" class="nav-link">Users</a></li> 
-                <li class="nav-item"><a href="/products" class="nav-link">products</a></li> 
-                <li class="nav-item"><a href="/faqs" class="nav-link">FAQs</a></li> 
-            </ul> 
-        </header> 
+                <li class="nav-item"><a href="/products" class="nav-link">Products</a></li>
+                <li class="nav-item"><a href="/faqs" class="nav-link">FAQs</a></li>
+            </ul>
+        </header>
+
+        <section class="dashboard-welcome border-bottom pb-3 mb-3">
+            <div class="d-flex align-items-center">
+                {% if user[3] %}<img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="{{ user[1] }} profile picture" class="rounded-circle me-2" width="48" height="48">{% endif %}
+                <p>Welcome to the Dashboard! {{ user[1] }}{% if is_admin %} · Admin{% endif %}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/logout" class="btn btn-danger">Logout</a>
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#settings-modal">Settings</button>
+            </div>
+        </section>
+
+        <ul class="nav dashboard-tabs mb-0" id="dashboard-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-panel" type="button" role="tab" aria-controls="home-panel" aria-selected="true">Home</button>
+            </li>
+            {% if is_admin %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts-panel" type="button" role="tab" aria-controls="alerts-panel" aria-selected="false">
+                    Alerts{% if notification_count %}<span class="notification-badge">{{ notification_count }}</span>{% endif %}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab" aria-controls="users-panel" aria-selected="false">Users</button>
+            </li>
+            {% endif %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="more-tab" data-bs-toggle="tab" data-bs-target="#more-panel" type="button" role="tab" aria-controls="more-panel" aria-selected="false">More</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="dashboard-tab-content">
+            <div class="tab-pane fade show active dashboard-tab-pane" id="home-panel" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+                <div class="dashboard-grid">
+                    <section class="dashboard-panel border rounded p-3">
+                        <h2 class="h5">Products</h2>
+                        <p>Browse the catalog or add a new product listing.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="/products" class="btn btn-outline-primary">View products</a>
+                            <a href="/products/add" class="btn btn-primary">Add product</a>
+                        </div>
+                    </section>
+                    <section class="dashboard-panel border rounded p-3">
+                        <h2 class="h5">Private chat</h2>
+                        <p>Use private messaging to communicate with other users.</p>
+                        <a class="btn btn-primary" href="{{ url_for('chat_page') }}">Open chat</a>
+                    </section>
+                    <section class="dashboard-panel dashboard-storage border rounded p-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <h2 class="h5 mb-0">Personal storage</h2>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn btn-outline-primary" href="{{ url_for('file_explorer') }}">Open file explorer</a>
+                                <a class="btn btn-primary" href="{{ url_for('ide_page') }}"><i class="bi bi-code-slash me-1" aria-hidden="true"></i>Open IDE</a>
+                            </div>
+                        </div>
+                        <p>{{ (storage_usage / 1024 / 1024)|round(2) }} MB of {{ (storage_quota / 1024 / 1024 / 1024)|round(2) }} GB used</p>
+                        <progress class="w-100 mb-2" aria-label="Storage usage" value="{{ storage_usage }}" max="{{ storage_quota }}"></progress>
+                        <p class="mb-0">Browse, upload, and manage files in the file explorer.</p>
+                    </section>
+                </div>
+            </div>
+
+            {% if is_admin %}
+            <div class="tab-pane fade dashboard-tab-pane" id="alerts-panel" role="tabpanel" aria-labelledby="alerts-tab" tabindex="0">
+                <section class="dashboard-panel border rounded p-3">
+                    <h2 class="h5">Alerts{% if notification_count %} <span class="notification-badge">{{ notification_count }}</span>{% endif %}</h2>
+                    {% if notifications %}
+                    <div>
+                        {% for note in notifications %}
+                        <div class="dashboard-notification">
+                            <div>
+                                <p class="mb-1">{{ note[3] }}</p>
+                                <small class="text-body-secondary">{{ note[4][:19].replace('T', ' ') }} UTC</small>
+                                {% if note[1] == 'new_product' %}
+                                <div class="mt-1"><a href="{{ url_for('products') }}">Review products</a></div>
+                                {% elif note[1] == 'new_user' %}
+                                <div class="mt-1"><a href="#users-panel" data-bs-toggle="tab" data-bs-target="#users-panel">View users</a></div>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('dismiss_notification', notification_id=note[0]) }}" method="POST">
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Dismiss</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="mb-0">No new notifications.</p>
+                    {% endif %}
+                </section>
+            </div>
+
+            <div class="tab-pane fade dashboard-tab-pane" id="users-panel" role="tabpanel" aria-labelledby="users-tab" tabindex="0">
+                <section class="dashboard-panel border rounded p-3">
+                    <h2 class="h5">User management</h2>
+                    <p>Lock, unlock, or delete normal user accounts.</p>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>
+                            {% for account in users %}
+                            <tr>
+                                <td>{{ account[1] }}</td>
+                                <td>{{ account[2] }}</td>
+                                <td>{{ account[3] }}</td>
+                                <td>{% if account[4] %}Locked{% else %}Active{% endif %}</td>
+                                <td>
+                                    {% if account[3] == 'user' and account[0] != user[0] %}
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <form action="{{ url_for('admin_lock_user', target_id=account[0]) }}" method="POST">
+                                            <input type="hidden" name="locked" value="{{ 0 if account[4] else 1 }}">
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">{% if account[4] %}Unlock{% else %}Lock{% endif %}</button>
+                                        </form>
+                                        <form action="{{ url_for('admin_delete_user', target_id=account[0]) }}" method="POST" onsubmit="return confirm('Delete {{ account[1]|e }}? This cannot be undone.');">
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                                        </form>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-body-secondary">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+            {% endif %}
+
+            <div class="tab-pane fade dashboard-tab-pane" id="more-panel" role="tabpanel" aria-labelledby="more-tab" tabindex="0">
+                <div class="dashboard-grid">
+                    <section class="dashboard-panel border rounded p-3" style="grid-column: 1 / -1;">
+                        <h2 class="h5">Public file sharing</h2>
+                        {% if public_folder %}
+                        <p>Files and folders you place in your <strong>public</strong> folder are available to anyone with your share link.</p>
+                        <p class="mb-2"><span class="text-body-secondary">{{ public_files_count }} file{% if public_files_count != 1 %}s{% endif %} shared</span></p>
+                        <div class="input-group mb-2">
+                            <input class="form-control" id="public-share-link" type="text" readonly value="{{ public_share_url }}">
+                            <button class="btn btn-outline-primary" type="button" id="copy-public-share-link">Copy link</button>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" href="{{ public_share_url }}" target="_blank" rel="noopener">Open share page</a>
+                            <a class="btn btn-outline-secondary" href="{{ url_for('file_explorer', folder_id=public_folder[0]) }}">Open public folder</a>
+                        </div>
+                        {% else %}
+                        <p>You can share files and folders publicly by putting them in a root folder named <strong>public</strong>.</p>
+                        <p class="mb-3">That folder does not exist yet. Create it, then add files or subfolders and share your link from here.</p>
+                        <form action="{{ url_for('create_public_folder') }}" method="POST">
+                            <button class="btn btn-primary" type="submit">Create public folder</button>
+                        </form>
+                        {% endif %}
+                    </section>
+                    <section class="dashboard-panel border rounded p-3">
+                        <h2 class="h5">FAQs</h2>
+                        <p>Answers to common questions about Mezalion.</p>
+                        <a href="/faqs" class="btn btn-outline-primary">Open FAQs</a>
+                    </section>
+                    <section class="dashboard-panel border rounded p-3">
+                        <h2 class="h5">Product catalog</h2>
+                        <p>Browse verified products from the community.</p>
+                        <a href="/products" class="btn btn-outline-primary">View products</a>
+                    </section>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="container d-flex justify-content-center py-3 mb-4 border-bottom">
-        {% if user[3] %}<img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="{{ user[1] }} profile picture" class="rounded-circle me-2" width="64" height="64">{% endif %}
-        <p>Welcome to the Dashboard! {{user[1]}}</p>
-    </div>
-    <div class="container d-flex gap-2">
-        <a href="/logout" class="btn btn-danger">logout</a>
-        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#settings-modal">Settings</button>
-    </div>
+
     <div class="modal fade" id="settings-modal" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
@@ -69,64 +310,35 @@
                             <div class="col-12"><button class="btn btn-warning" type="submit">Change password</button></div>
                         </form>
                     </section>
-                    <section class="border rounded p-3">
+                    <section class="border rounded p-3 mb-3">
                         <h3 class="h6">Appearance</h3>
-                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="dark-mode" data-dark-theme-toggle><label class="form-check-label" for="dark-mode">Dark mode</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="dark-mode" data-dark-theme-toggle checked><label class="form-check-label" for="dark-mode">Dark mode</label></div>
                     </section>
+                    {% if not is_admin %}
+                    <section class="border rounded p-3">
+                        <h3 class="h6">Upgrade to admin</h3>
+                        <form action="{{ url_for('upgrade_admin_key') }}" method="POST" class="input-group">
+                            <input class="form-control" name="admin_key" maxlength="16" minlength="16" placeholder="16-character key" autocomplete="off" required>
+                            <button class="btn btn-primary" type="submit">Upgrade</button>
+                        </form>
+                    </section>
+                    {% else %}
+                    <section class="border rounded p-3">
+                        <h3 class="h6">Admin key</h3>
+                        {% if user[6] %}
+                        <p class="mb-1 text-body-secondary">Key used to upgrade this account</p>
+                        <code class="user-select-all">{{ user[6] }}</code>
+                        {% else %}
+                        <p class="mb-0 text-body-secondary">No upgrade key is stored for this account.</p>
+                        {% endif %}
+                    </section>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    <hr>
-    <div class="container">
-    <p>To add new products, please click the button below.</p>
-    <br>
-    <a href="/products/add" class="btn btn-primary">Add Product</a>
-    </div>
-    <hr>
-    <div class="container py-3">
-        <h2 class="h4">Private chat</h2>
-        <p>Use private messaging to communicate with other users.</p>
-        <a class="btn btn-primary" href="{{ url_for('chat_page') }}">Open chat</a>
-    </div>
-    <hr>
-    <div class="container py-3">
-        <h2 class="h4">Personal storage</h2>
-        <a class="btn btn-outline-primary mb-3" href="{{ url_for('file_explorer') }}">Open file explorer</a>
-        <p>{{ (storage_usage / 1024 / 1024)|round(2) }} MB of {{ (storage_quota / 1024 / 1024 / 1024)|round(2) }} GB used</p>
-        <progress class="w-100 mb-3" aria-label="Storage usage" value="{{ storage_usage }}" max="{{ storage_quota }}"></progress>
-        <form action="/storage/upload" method="POST" enctype="multipart/form-data" class="mb-3">
-            <div class="input-group">
-                <input class="form-control" type="file" name="file" required>
-                <button class="btn btn-primary" type="submit">Upload file</button>
-            </div>
-        </form>
-        {% if storage_items %}
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead><tr><th>Name</th><th>Size</th><th>Action</th></tr></thead>
-                <tbody>
-                {% for item in storage_items %}
-                <tr>
-                    <td>{{ item[1] }}</td>
-                    <td>{{ (item[3] / 1024)|round(1) }} KB</td>
-                    <td class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('download_file', item_id=item[0]) }}">Download</a>
-                        <form action="{{ url_for('remove_file', item_id=item[0]) }}" method="POST" onsubmit="return confirm('Delete {{ item[1]|e }}? This cannot be undone.');"><button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form>
-                    </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}<p class="text-body-secondary">No files uploaded yet.</p>{% endif %}
-    </div>
-    <hr>
-    
 
-<script src="https://code.jquery.com/jquery-4.0.0.min.js" integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='theme.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
@@ -147,6 +359,39 @@
     document.getElementById('profile-picture-form')?.addEventListener('submit', () => {
         croppedImage.value = profileCropper.getCroppedCanvas({ width: 320, height: 320, imageSmoothingQuality: 'high' }).toDataURL('image/jpeg', 0.82);
     });
+    document.getElementById('copy-public-share-link')?.addEventListener('click', async () => {
+        const input = document.getElementById('public-share-link');
+        if (!input?.value) return;
+        try {
+            await navigator.clipboard.writeText(input.value);
+        } catch (_) {
+            input.select();
+            document.execCommand('copy');
+        }
+        const button = document.getElementById('copy-public-share-link');
+        const original = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = original; }, 1500);
+    });
+
+    function activateDashboardTab(targetSelector) {
+        const trigger = document.querySelector(`#dashboard-tabs [data-bs-target="${targetSelector}"]`);
+        if (!trigger) return;
+        bootstrap.Tab.getOrCreateInstance(trigger).show();
+    }
+
+    document.querySelectorAll('[data-bs-toggle="tab"][data-bs-target="#users-panel"]').forEach(link => {
+        link.addEventListener('click', event => {
+            if (link.closest('#dashboard-tabs')) return;
+            event.preventDefault();
+            activateDashboardTab('#users-panel');
+        });
+    });
+
+    const hash = window.location.hash;
+    if (hash === '#alerts-panel' || hash === '#users-panel' || hash === '#more-panel' || hash === '#home-panel') {
+        activateDashboardTab(hash);
+    }
 </script>
 </body>
 </html>
